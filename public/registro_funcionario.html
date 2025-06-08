@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Funcionário - Studio 57</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="/__/firebase/10.12.2/firebase-app.js"></script>
+    <script defer src="/__/firebase/10.12.2/firebase-auth.js"></script>
+    <script defer src="/__/firebase/10.12.2/firebase-firestore.js"></script>
+    <script defer src="/__/firebase/10.12.2/firebase-storage.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div id="sidebar-placeholder"></div>
+        <div class="main-content-area-wrapper">
+            <header class="main-header">
+                <h1 id="page-title-header">Registro de Funcionário</h1>
+                <div class="header-user-info">
+                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
+                    <div id="current-datetime">--/--/---- --:--:--</div>
+                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+            <main class="content-scrollable">
+                <div class="form-container">
+                    </div>
+            </main>
+        </div>
+    </div>
+    <script type="module">
+        import { app } from './js/firebase-config.js';
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
+        import { initializeFuncionarioModule } from './js/funcionario.js';
+
+        async function initializePage() {
+            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const storage = getStorage(app);
+            checkAuthAndRedirect(auth, 'index.html', (user) => {
+                initializeCommonUI(user);
+                initializeSidebarToggle();
+                initializeFuncionarioModule(db, auth, app);
+            });
+        }
+        initializePage();
+    </script>
+</body>
+</html>
