@@ -1,5 +1,5 @@
 /* =================================================================
-   STYLE.CSS - VERSÃO FINAL UNIFICADA (COM GANTT SUPER INTERATIVO)
+   STYLE.CSS - VERSÃO FINAL UNIFICADA (COM TABELA DINÂMICA DE ÁREAS)
    ================================================================= */
 
 /* --- Variáveis Globais (Cores, Fontes, Tamanhos) --- */
@@ -268,9 +268,64 @@ main.content-scrollable { flex: 1; padding: 1.5rem; overflow-y: auto; }
 .toast.toast-warning .toast-icon { background-color: var(--color-warning); color: white; }
 .toast.toast-info .toast-icon { background-color: var(--color-info); color: white; }
 
+/* =======================================================
+   ESTILOS - Tabela Dinâmica de Áreas
+   ======================================================= */
+.area-table-container {
+    border: 1px solid var(--color-light-gray);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+.area-table-header, .area-table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 100px;
+    align-items: center;
+    border-bottom: 1px solid var(--color-light-gray);
+}
+.area-table-header {
+    background-color: var(--color-bg-light);
+    font-weight: 600;
+}
+.area-table-header-cell {
+    padding: 0.75rem 1rem;
+}
+.area-table-row:last-child {
+    border-bottom: none;
+}
+.area-table-cell {
+    padding: 0.5rem;
+}
+.area-table-cell .form-control {
+    margin-bottom: 0;
+}
+.area-table-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.area-table-actions .btn-action {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--color-dark-gray);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.area-table-actions .btn-action:hover {
+    background-color: var(--color-bg-light);
+    color: var(--color-dark);
+}
+.area-table-actions .btn-action.delete:hover {
+    color: var(--color-danger);
+}
 
 /* =======================================================
-   NOVOS ESTILOS - Gantt Interativo e Modal
+   ESTILOS - Gantt Interativo e Modal
    ======================================================= */
 .gantt-container {
     display: flex;

@@ -1,208 +1,177 @@
-// empreendimento.js
-import { collection, addDoc, getDocs, query, orderBy, doc, setDoc, deleteDoc, where, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { APP_COLLECTION_ID } from './firebase-config.js'; // Importa o APP_COLLECTION_ID
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { APP_COLLECTION_ID } from './firebase-config.js';
+import { showLoading, hideLoading, showToast } from './common.js';
 
-let currentEmpreendimentoEditId = null; // Armazena o ID do empreendimento sendo editado
+function applyCepMask(e) {
+    e.target.value = e.target.value.replace(/\D/g, '').replace(/^(\d{5})(\d)/, '$1-$2');
+}
 
-export function initializeEmpreendimentoModule(db, auth) {
+export function initializeEmpreendimentoModule(db) {
     const empreendimentoForm = document.getElementById('empreendimentoForm');
-    const empreendimentoList = document.getElementById('empreendimento-list');
-    const formMessage = document.getElementById('form-message');
-    const addEmpreendimentoBtn = document.getElementById('add-empreendimento-btn');
-    const cancelEditBtn = document.getElementById('cancel-edit-btn');
-    const searchInput = document.getElementById('search-input');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelFormBtn');
+    const cepInput = document.getElementById('cep');
+    const addPavementBtn = document.getElementById('add-pavement-btn');
+    const areaTableBody = document.getElementById('area-table-body');
 
-    // Referência à coleção de empreendimentos no Firestore, utilizando o APP_COLLECTION_ID
-    const empreendimentoCollectionRef = collection(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`);
+    // Mapeamento dos IDs dos campos estáticos
+    const fieldIds = [
+        "nomeEmpreendimento", "usoImovel", "descricaoProjeto",
+        "cep", "logradouro", "numero", "bairro", "cidade", "estado",
+        "lote", "quadra", "zona", "via", "areaTerreno",
+        "proprietarioNome", "proprietarioCpfCnpj", "responsavelTecnicoNome", "cauCrea",
+        "numPavimentos", "coefAproveitamento", "taxaPermeabilidade", "unidadesResidenciais",
+        "unidadesNaoResidenciais", "vagasEstacionamento", "observacoesEdificacao",
+        "statusAprovacao", "dataAprovacao", "numProcesso", "responsavelAprovacao"
+    ];
 
-    // Função para exibir mensagens de feedback no formulário
-    function showFormMessage(message, type = 'info') {
-        formMessage.textContent = message;
-        formMessage.className = `info-message ${type}-message`; // Adiciona classe para estilo Tailwind
-        formMessage.style.display = 'block'; // Garante que a mensagem seja visível
-        setTimeout(() => {
-            formMessage.textContent = '';
-            formMessage.className = 'info-message';
-            formMessage.style.display = 'none'; // Esconde a mensagem após um tempo
-        }, 5000);
+    // --- LÓGICA DA TABELA DE ÁREAS ---
+    
+    function createAreaRow(pavimento = '', area = '') {
+        const row = document.createElement('div');
+        row.className = 'area-table-row';
+        row.innerHTML = `
+            <div class="area-table-cell">
+                <input type="text" class="form-control pavement-name" placeholder="Ex: Térreo" value="${pavimento}">
+            </div>
+            <div class="area-table-cell">
+                <input type="number" class="form-control pavement-area" placeholder="0.00" step="0.01" value="${area}">
+            </div>
+            <div class="area-table-cell area-table-actions">
+                <button type="button" class="btn-action move-up" title="Mover para Cima"><i class="fas fa-arrow-up"></i></button>
+                <button type="button" class="btn-action move-down" title="Mover para Baixo"><i class="fas fa-arrow-down"></i></button>
+                <button type="button" class="btn-action delete" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        `;
+        areaTableBody.appendChild(row);
     }
 
-    // Função para preencher o formulário para edição
-    function fillFormForEdit(data, id) {
-        document.getElementById('nomeEmpreendimento').value = data.nomeEmpreendimento || '';
-        document.getElementById('localizacao').value = data.localizacao || '';
-        document.getElementById('tipoEmpreendimento').value = data.tipoEmpreendimento || '';
-        // Converte o Timestamp do Firestore para o formato de data HTML (YYYY-MM-DD)
-        document.getElementById('dataInicio').value = data.dataInicio instanceof Timestamp ? data.dataInicio.toDate().toISOString().split('T')[0] : '';
-        document.getElementById('dataPrevisaoConclusao').value = data.dataPrevisaoConclusao instanceof Timestamp ? data.dataPrevisaoConclusao.toDate().toISOString().split('T')[0] : '';
-        document.getElementById('responsavel').value = data.responsavel || '';
-        document.getElementById('status').value = data.status || 'planejamento';
-        document.getElementById('observacoes').value = data.observacoes || '';
+    areaTableBody.addEventListener('click', (e) => {
+        const target = e.target.closest('.btn-action');
+        if (!target) return;
 
-        currentEmpreendimentoEditId = id;
-        addEmpreendimentoBtn.textContent = 'Salvar Edição';
-        cancelEditBtn.style.display = 'inline-block';
-        showFormMessage('Modo de edição. Cancele para adicionar um novo empreendimento.', 'info');
+        const row = target.closest('.area-table-row');
+
+        if (target.classList.contains('delete')) {
+            if (confirm('Tem certeza que deseja excluir este pavimento?')) {
+                row.remove();
+            }
+        } else if (target.classList.contains('move-up')) {
+            const prevRow = row.previousElementSibling;
+            if (prevRow) {
+                areaTableBody.insertBefore(row, prevRow);
+            }
+        } else if (target.classList.contains('move-down')) {
+            const nextRow = row.nextElementSibling;
+            if (nextRow) {
+                areaTableBody.insertBefore(nextRow, row);
+            }
+        }
+    });
+
+    addPavementBtn.addEventListener('click', () => createAreaRow());
+    
+    // Inicializa com algumas linhas padrão
+    createAreaRow('Térreo');
+
+    // --- LÓGICA DO FORMULÁRIO (CEP e SUBMIT) ---
+
+    // CORREÇÃO: Função de busca de CEP foi implementada corretamente
+    async function fetchAddressFromCEP(cepValue) {
+        const cleanCep = cepValue.replace(/\D/g, '');
+        if (cleanCep.length !== 8) {
+            return; // Sai se o CEP não tiver 8 dígitos
+        }
+
+        showLoading();
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            if (!response.ok) {
+                throw new Error('Falha na resposta da API');
+            }
+            
+            const data = await response.json();
+            if (data.erro) {
+                showToast('warning', 'CEP não encontrado', 'Verifique o CEP digitado e tente novamente.');
+            } else {
+                // Preenche os campos de endereço
+                document.getElementById('logradouro').value = data.logradouro || '';
+                document.getElementById('bairro').value = data.bairro || '';
+                document.getElementById('cidade').value = data.localidade || '';
+                document.getElementById('estado').value = data.uf || '';
+                document.getElementById('numero').focus(); // Coloca o cursor no campo de número
+            }
+        } catch (error) {
+            console.error("Erro ao buscar CEP:", error);
+            showToast('error', 'Erro na Busca', 'Não foi possível buscar o endereço. Tente preencher manualmente.');
+        } finally {
+            hideLoading();
+        }
     }
+    
+    cepInput.addEventListener('input', applyCepMask);
+    cepInput.addEventListener('blur', (e) => fetchAddressFromCEP(e.target.value));
 
-    // Função para resetar o formulário e o modo de edição
-    function resetForm() {
-        empreendimentoForm.reset();
-        currentEmpreendimentoEditId = null;
-        addEmpreendimentoBtn.textContent = 'Adicionar Empreendimento';
-        cancelEditBtn.style.display = 'none';
-        formMessage.style.display = 'none'; // Esconde a mensagem
-        formMessage.textContent = ''; // Limpa o texto da mensagem
-    }
-
-    // Evento de submit do formulário
     empreendimentoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        showFormMessage('Salvando...', 'info'); // Feedback imediato
+        showLoading();
+        saveBtn.disabled = true;
 
-        const nomeEmpreendimento = document.getElementById('nomeEmpreendimento').value.trim();
-        const localizacao = document.getElementById('localizacao').value.trim();
-        const tipoEmpreendimento = document.getElementById('tipoEmpreendimento').value;
-        const dataInicioStr = document.getElementById('dataInicio').value;
-        const dataPrevisaoConclusaoStr = document.getElementById('dataPrevisaoConclusao').value;
-        const responsavel = document.getElementById('responsavel').value.trim();
-        const status = document.getElementById('status').value;
-        const observacoes = document.getElementById('observacoes').value.trim();
+        const empreendimentoData = {};
+        // Coleta dados dos campos estáticos
+        fieldIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                const value = element.value;
+                if (element.type === 'number') {
+                    empreendimentoData[id] = value ? Number(value) : null;
+                } else if(element.type === 'date') {
+                    empreendimentoData[id] = value || null;
+                } else {
+                    empreendimentoData[id] = value;
+                }
+            }
+        });
 
-        // Validação básica
-        if (!nomeEmpreendimento || !localizacao || !tipoEmpreendimento || !dataInicioStr || !status) {
-            showFormMessage('Por favor, preencha todos os campos obrigatórios (Nome, Localização, Tipo, Data de Início, Status).', 'error');
-            return;
-        }
+        // Coleta dados da tabela de áreas dinâmica
+        const quadroDeAreas = [];
+        const areaRows = areaTableBody.querySelectorAll('.area-table-row');
+        areaRows.forEach(row => {
+            const nome = row.querySelector('.pavement-name').value;
+            const area = row.querySelector('.pavement-area').value;
+            if (nome && area) { // Salva apenas se ambos os campos estiverem preenchidos
+                quadroDeAreas.push({ pavimento: nome, area: Number(area) });
+            }
+        });
+        empreendimentoData.quadroDeAreas = quadroDeAreas;
 
-        // Converte strings de data para objetos Timestamp do Firestore
-        const dataInicio = dataInicioStr ? Timestamp.fromDate(new Date(dataInicioStr)) : null;
-        const dataPrevisaoConclusao = dataPrevisaoConclusaoStr ? Timestamp.fromDate(new Date(dataPrevisaoConclusaoStr)) : null;
-
-        const empreendimentoData = {
-            nomeEmpreendimento,
-            localizacao,
-            tipoEmpreendimento,
-            dataInicio,
-            dataPrevisaoConclusao,
-            responsavel,
-            status,
-            observacoes,
-            updatedAt: serverTimestamp() // Atualiza sempre que houver modificação
-        };
-
-        // Adiciona createdAt apenas se for um novo registro
-        if (!currentEmpreendimentoEditId) {
-            empreendimentoData.createdAt = serverTimestamp();
-        }
-
-        console.log("Dados a serem salvos:", empreendimentoData); // Log para depuração
+        empreendimentoData.criadoEm = serverTimestamp();
+        empreendimentoData.atualizadoEm = serverTimestamp();
 
         try {
-            if (currentEmpreendimentoEditId) {
-                // Modo de edição
-                const docRef = doc(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`, currentEmpreendimentoEditId);
-                await setDoc(docRef, empreendimentoData, { merge: true }); // Usar merge: true é importante para atualizações parciais
-                showFormMessage('Empreendimento atualizado com sucesso!', 'success');
-            } else {
-                // Modo de adição
-                await addDoc(empreendimentoCollectionRef, empreendimentoData);
-                showFormMessage('Empreendimento adicionado com sucesso!', 'success');
-            }
-            resetForm();
-            loadEmpreendimentos(); // Recarrega a lista de empreendimentos após salvar
+            const empreendimentosRef = collection(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`);
+            await addDoc(empreendimentosRef, empreendimentoData);
+            
+            showToast('success', 'Sucesso!', 'Empreendimento cadastrado com sucesso.');
+            empreendimentoForm.reset();
+            areaTableBody.innerHTML = ''; // Limpa a tabela
+            createAreaRow('Térreo'); // Adiciona a linha inicial de volta
+            document.querySelector('.tab[data-tab="geral"]')?.click();
+             
         } catch (error) {
             console.error("Erro ao salvar empreendimento:", error);
-            showFormMessage('Erro ao salvar empreendimento: ' + error.message, 'error');
+            showToast('error', 'Erro', 'Não foi possível salvar os dados. Tente novamente.');
+        } finally {
+            hideLoading();
+            saveBtn.disabled = false;
         }
     });
 
-    // Evento para cancelar edição
-    cancelEditBtn.addEventListener('click', resetForm);
-
-    // Função para carregar e exibir empreendimentos
-    async function loadEmpreendimentos(searchTerm = '') {
-        empreendimentoList.innerHTML = '<li class="text-center text-gray-500 py-4">Carregando empreendimentos...</li>'; // Feedback de carregamento
-        let q = query(empreendimentoCollectionRef, orderBy('nomeEmpreendimento'));
-
-        try {
-            const querySnapshot = await getDocs(q);
-            let empreendimentos = [];
-            querySnapshot.forEach((doc) => {
-                empreendimentos.push({ id: doc.id, ...doc.data() });
-            });
-
-            if (searchTerm) {
-                const lowerSearchTerm = searchTerm.toLowerCase();
-                empreendimentos = empreendimentos.filter(emp =>
-                    (emp.nomeEmpreendimento && emp.nomeEmpreendimento.toLowerCase().includes(lowerSearchTerm)) ||
-                    (emp.localizacao && emp.localizacao.toLowerCase().includes(lowerSearchTerm))
-                );
-            }
-
-            if (empreendimentos.length === 0) {
-                empreendimentoList.innerHTML = '<li class="info-message text-center py-4 text-gray-500">Nenhum empreendimento encontrado.</li>';
-                return;
-            }
-
-            empreendimentoList.innerHTML = ''; // Limpa a lista antes de adicionar os itens
-            empreendimentos.forEach((emp) => {
-                const li = document.createElement('li');
-                // Formatação simples da data para exibição
-                const dataInicioStr = emp.dataInicio instanceof Timestamp ? emp.dataInicio.toDate().toLocaleDateString('pt-BR') : 'N/A';
-                const dataPrevisaoConclusaoStr = emp.dataPrevisaoConclusao instanceof Timestamp ? emp.dataPrevisaoConclusao.toDate().toLocaleDateString('pt-BR') : 'N/A';
-
-                li.innerHTML = `
-                    <strong>${emp.nomeEmpreendimento}</strong> (${emp.tipoEmpreendimento} - Status: ${emp.status})<br>
-                    Localização: ${emp.localizacao}<br>
-                    Início: ${dataInicioStr} | Previsão: ${dataPrevisaoConclusaoStr}<br>
-                    Responsável: ${emp.responsavel || 'N/A'}
-                    <div class="actions flex justify-end space-x-2 mt-2">
-                        <button class="edit-btn btn btn-warning btn-sm" data-id="${emp.id}"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="delete-btn btn btn-danger btn-sm" data-id="${emp.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
-                    </div>
-                `;
-                empreendimentoList.appendChild(li);
-            });
-
-            // Adiciona listeners para os botões de editar e excluir
-            document.querySelectorAll('.edit-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const idToEdit = e.currentTarget.dataset.id; // Usar currentTarget
-                    const empreendimentoToEdit = empreendimentos.find(emp => emp.id === idToEdit);
-                    if (empreendimentoToEdit) {
-                        fillFormForEdit(empreendimentoToEdit, idToEdit);
-                    }
-                });
-            });
-
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const idToDelete = e.currentTarget.dataset.id; // Usar currentTarget
-                    if (confirm('Tem certeza que deseja excluir este empreendimento?')) {
-                        try {
-                            await deleteDoc(doc(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`, idToDelete));
-                            showFormMessage('Empreendimento excluído com sucesso!', 'success');
-                            loadEmpreendimentos(); // Recarrega a lista
-                        } catch (error) {
-                            console.error("Erro ao excluir empreendimento:", error);
-                            showFormMessage('Erro ao excluir empreendimento: ' + error.message, 'error');
-                        }
-                    }
-                });
-            });
-
-        } catch (error) {
-            console.error("Erro ao carregar empreendimentos:", error);
-            empreendimentoList.innerHTML = `<li class="error-message text-center py-4 text-red-500">Erro ao carregar empreendimentos: ${error.message}</li>`;
+    cancelBtn.addEventListener('click', () => {
+        if (confirm('Tem certeza que deseja limpar todos os campos?')) {
+            empreendimentoForm.reset();
+            areaTableBody.innerHTML = '';
+            createAreaRow('Térreo');
         }
-    }
-
-    // Evento de busca
-    searchInput.addEventListener('input', (e) => {
-        loadEmpreendimentos(e.target.value);
     });
-
-    // Carrega os empreendimentos ao iniciar
-    loadEmpreendimentos();
 }
