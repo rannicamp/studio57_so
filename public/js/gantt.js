@@ -1,10 +1,12 @@
-// public/js/gantt.js (CORRIGIDO E REESTRUTURADO)
-import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// public/js/gantt.js (REPROGRAMADO E CORRIGIDO)
+import { collection, getDocs, addDoc, serverTimestamp, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { APP_COLLECTION_ID } from "./firebase-config.js";
 import { showToast } from './common.js';
 
+// A função principal que organiza todo o código da página
 export function initializeGanttModule(db) {
-    // Mapeamento dos elementos do formulário
+    
+    // Mapeamento dos elementos da página
     const selectEmpreendimento = document.getElementById("select-empreendimento");
     const ganttActionsContainer = document.getElementById("gantt-actions-container");
     const nomeAtividadeInput = document.getElementById("atividade-nome");
@@ -40,12 +42,13 @@ export function initializeGanttModule(db) {
         } catch (error) {
             console.error("Erro ao carregar empreendimentos:", error);
             selectEmpreendimento.innerHTML = '<option value="">Erro ao carregar</option>';
-            showToast('error', 'Erro', 'Não foi possível carregar os empreendimentos.');
+            showToast('error', 'Erro de Rede', 'Não foi possível carregar a lista de empreendimentos.');
         }
     }
 
     async function carregarAtividades() {
         const empId = selectEmpreendimento.value;
+        // Mostra/esconde o formulário de adicionar atividade
         ganttActionsContainer.style.display = empId ? 'block' : 'none';
 
         if (!empId) {
@@ -68,8 +71,8 @@ export function initializeGanttModule(db) {
             }
         } catch (e) {
             console.error("Erro ao carregar atividades:", e);
-            ganttPlaceholder.innerHTML = "Erro ao carregar o cronograma.";
-            showToast('error', 'Erro', 'Não foi possível carregar o cronograma.');
+            ganttPlaceholder.innerHTML = "Ocorreu um erro ao carregar o cronograma.";
+            showToast('error', 'Erro de Rede', 'Não foi possível carregar as atividades do cronograma.');
         }
     }
 
@@ -78,24 +81,27 @@ export function initializeGanttModule(db) {
       const container = document.createElement("div");
       container.className = "gantt-chart";
 
+      // Ordena por data de início e encontra o período total do projeto
       atividades.sort((a, b) => (a.dataInicio?.seconds || 0) - (b.dataInicio?.seconds || 0));
+      
+      if (atividades.length === 0) return;
 
       const minDate = new Date(atividades[0].dataInicio.seconds * 1000);
       const maxDate = new Date(Math.max(...atividades.map(a => a.dataFim.seconds)) * 1000);
-      const totalDays = (maxDate - minDate) / (1000 * 60 * 60 * 24) + 1;
+      const totalDays = Math.max(((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1, 1);
 
       atividades.forEach((a) => {
         const startDate = new Date(a.dataInicio.seconds * 1000);
         const endDate = new Date(a.dataFim.seconds * 1000);
-
+        
         const startOffset = (startDate - minDate) / (1000 * 60 * 60 * 24);
-        const duration = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+        const duration = ((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
-        const left = (startOffset / totalDays) * 100;
-        const width = (duration / totalDays) * 100;
+        const leftPercent = (startOffset / totalDays) * 100;
+        const widthPercent = (duration / totalDays) * 100;
 
-        const linha = document.createElement("div");
-        linha.className = 'gantt-row';
+        const row = document.createElement("div");
+        row.className = 'gantt-row';
         
         const label = document.createElement('div');
         label.className = 'gantt-label';
@@ -107,15 +113,15 @@ export function initializeGanttModule(db) {
 
         const bar = document.createElement("div");
         bar.className = 'gantt-bar';
-        bar.style.left = `${left}%`;
-        bar.style.width = `${width}%`;
+        bar.style.left = `${leftPercent}%`;
+        bar.style.width = `${widthPercent}%`;
         bar.textContent = a.descricao || '';
-        bar.title = `Início: ${startDate.toLocaleDateString('pt-BR')} \nFim: ${endDate.toLocaleDateString('pt-BR')}`;
+        bar.title = `Início: ${startDate.toLocaleDateString('pt-BR', {timeZone: 'UTC'})} \nFim: ${endDate.toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
         
         barContainer.appendChild(bar);
-        linha.appendChild(label);
-        linha.appendChild(barContainer);
-        container.appendChild(linha);
+        row.appendChild(label);
+        row.appendChild(barContainer);
+        container.appendChild(row);
       });
 
       ganttPlaceholder.appendChild(container);

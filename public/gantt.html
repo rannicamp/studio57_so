@@ -25,19 +25,19 @@
       <main class="content-scrollable">
         <div class="form-container">
             <div class="form-header">
-                <h3 class="form-title">Filtros e Ações</h3>
+                <h3 class="form-title">Filtro de Empreendimento</h3>
             </div>
             <div class="form-body">
                 <div class="form-group">
                     <label for="select-empreendimento" class="form-label">Selecione um Empreendimento para visualizar ou adicionar atividades:</label>
-                    <select id="select-empreendimento" class="form-control"><option value="">Primeiro, crie um empreendimento</option></select>
+                    <select id="select-empreendimento" class="form-control"><option value="">Carregando...</option></select>
                 </div>
             </div>
         </div>
 
-        <div id="gantt-actions-container" class="form-container mt-4" style="display: none;">
+        <div id="gantt-actions-container" class="form-container" style="margin-top: 1.5rem; display: none;">
             <div class="form-header">
-                 <h3 class="form-title">Adicionar Nova Atividade</h3>
+                 <h3 class="form-title">Adicionar Nova Atividade ao Cronograma</h3>
             </div>
             <div class="form-body">
                 <div class="form-grid-2-col">
@@ -46,15 +46,15 @@
                         <input type="text" id="atividade-nome" class="form-control" placeholder="Ex: Alvenaria do 1º Pavimento">
                     </div>
                     <div class="form-group">
-                        <label for="atividade-etapa" class="form-label">Etapa do Cronograma</label>
-                        <input type="text" id="atividade-etapa" class="form-control" placeholder="Ex: Estrutura, Acabamento">
+                        <label for="atividade-etapa" class="form-label">Etapa (Ex: Estrutura, Acabamento)</label>
+                        <input type="text" id="atividade-etapa" class="form-control" placeholder="Ex: Acabamentos">
                     </div>
                     <div class="form-group">
                         <label for="data-inicio" class="form-label">Data de Início *</label>
                         <input type="date" id="data-inicio" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label for="duracao-input" class="form-label">Duração (dias) *</label>
+                        <label for="duracao-input" class="form-label">Duração (dias corridos) *</label>
                         <input type="number" id="duracao-input" class="form-control" step="1" min="1">
                     </div>
                      <div class="form-group">
@@ -63,7 +63,7 @@
                     </div>
                 </div>
                  <div class="form-group">
-                    <label for="atividade-descricao" class="form-label">Descrição</label>
+                    <label for="atividade-descricao" class="form-label">Descrição (será exibida na barra)</label>
                     <textarea id="atividade-descricao" class="form-control" rows="2" placeholder="Detalhes sobre a atividade..."></textarea>
                 </div>
                 <button id="btn-salvar-atividade" class="btn btn-primary mt-2">
@@ -72,11 +72,13 @@
             </div>
         </div>
 
-        <div class="form-container mt-4">
+        <div class="form-container" style="margin-top: 1.5rem;">
             <div class="form-header">
                 <h3 class="form-title">Visualização do Cronograma</h3>
             </div>
-          <div class="gantt-chart-placeholder">Selecione um empreendimento para ver o cronograma.</div>
+            <div class="gantt-chart-placeholder">
+                Selecione um empreendimento para ver o cronograma.
+            </div>
         </div>
       </main>
     </div>
