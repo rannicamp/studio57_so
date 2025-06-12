@@ -1,7 +1,7 @@
-// public/js/gantt.js (VERSÃO COMPLETA E CORRIGIDA COM LÓGICA DE DURAÇÃO)
-import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// public/js/gantt.js (CAMINHO DE IMPORTAÇÃO CORRIGIDO)
+import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, where, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { APP_COLLECTION_ID } from "./firebase-config.js";
-import { showToast } from './common.js';
+import { showToast } from './common.js'; // <-- CORREÇÃO APLICADA AQUI
 
 export function initializeGanttModule(db) {
     
@@ -20,7 +20,7 @@ export function initializeGanttModule(db) {
     const modalActivityDesc = document.getElementById('modal-activity-desc');
     const modalStartDate = document.getElementById('modal-start-date');
     const modalEndDate = document.getElementById('modal-end-date');
-    const modalDuration = document.getElementById('modal-duration'); // Novo campo
+    const modalDuration = document.getElementById('modal-duration');
     const modalSaveBtn = document.getElementById('modal-save-btn');
     const modalCancelBtn = document.getElementById('modal-cancel-btn');
     const modalCloseBtn = document.getElementById('modal-close-btn');
@@ -81,7 +81,7 @@ export function initializeGanttModule(db) {
             modalActivityDesc.value = activity.descricao;
             modalStartDate.value = new Date(activity.dataInicio.seconds * 1000).toISOString().split('T')[0];
             modalEndDate.value = new Date(activity.dataFim.seconds * 1000).toISOString().split('T')[0];
-            calculateDuration(); // Calcula e preenche a duração ao editar
+            calculateDuration(); 
         } else {
             modalTitle.textContent = 'Nova Atividade';
             modalActivityId.value = '';
@@ -132,8 +132,6 @@ export function initializeGanttModule(db) {
         }
     }
     
-    // As outras funções (renderGantt, loadAndRender, etc.) permanecem as mesmas
-    // ...
     function renderGantt() {
         ganttChartContainer.style.display = 'block';
         ganttPlaceholder.style.display = 'none';
@@ -174,11 +172,7 @@ export function initializeGanttModule(db) {
 
         const zoomControls = document.createElement('div');
         zoomControls.className = 'gantt-view-controls';
-        zoomControls.innerHTML = `
-            <label class="form-label" style="margin-bottom: 0;">Zoom:</label>
-            <button class="btn btn-outline-form btn-zoom" title="Aumentar Zoom">+</button>
-            <button class="btn btn-outline-form btn-zoom" title="Diminuir Zoom">−</button>
-        `;
+        zoomControls.innerHTML = `<label class="form-label" style="margin-bottom: 0;">Zoom:</label><button class="btn btn-outline-form btn-zoom" title="Aumentar Zoom">+</button><button class="btn btn-outline-form btn-zoom" title="Diminuir Zoom">−</button>`;
         
         controls.append(btn, zoomControls);
 
@@ -382,13 +376,10 @@ export function initializeGanttModule(db) {
         }
     }
     
-    // --- Event Listeners ---
     selectEmpreendimento?.addEventListener('change', loadAndRender);
     modalForm.addEventListener('submit', saveModalData);
     modalCancelBtn.addEventListener('click', closeModal);
     modalCloseBtn.addEventListener('click', closeModal);
-    
-    // CORREÇÃO: A lógica de cálculo agora está correta e mais intuitiva.
     modalStartDate.addEventListener('change', calculateEndDate);
     modalEndDate.addEventListener('change', calculateDuration);
     modalDuration.addEventListener('input', calculateEndDate);
