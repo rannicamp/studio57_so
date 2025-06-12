@@ -1,108 +1,127 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cronograma (Gantt) - Studio 57</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma de Obra (Gantt) - Studio 57</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div class="page-wrapper">
-    <div id="sidebar-placeholder"></div>
-    <div class="main-content-area-wrapper">
-      <header class="main-header">
-        <h1 id="page-title-header">Cronograma (Gantt)</h1>
-        <div class="header-user-info">
-            <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
-            <div id="current-datetime">--/--/---- --:--:--</div>
-            <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
-      </header>
-      <main class="content-scrollable">
-        <div class="toast-container" id="toastContainer"></div>
-        <div class="spinner-overlay" id="loadingSpinner"><div class="spinner"></div></div>
-
-        <div class="form-container">
-            <div class="form-body">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="select-empreendimento" class="form-label">Selecione um Empreendimento:</label>
-                    <select id="select-empreendimento" class="form-control"><option value="">Carregando...</option></select>
+    <div class="page-wrapper">
+        <div id="sidebar-placeholder"></div>
+        <div class="main-content-area-wrapper">
+            <header class="main-header">
+                <h1 id="page-title-header">Cronograma (Gantt)</h1>
+                <div class="header-user-info">
+                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
+                    <div id="current-datetime">--/--/---- --:--:--</div>
+                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
-            </div>
-        </div>
+            </header>
+            <main class="content-scrollable">
+                <div class="toast-container" id="toastContainer"></div>
 
-        <div id="gantt-chart-container" class="form-container" style="margin-top: 1.5rem; display: none; padding: 0; overflow: visible;">
-            </div>
+                <div class="form-container">
+                    <div class="form-body" style="padding: 1.5rem;">
+                        <div class="actions-bar">
+                            <div class="filters-container">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="select-empreendimento" class="form-label">Selecione um Empreendimento</label>
+                                    <select id="select-empreendimento" class="form-control" style="min-width: 300px;"></select>
+                                </div>
+                            </div>
+                            <div id="gantt-header-controls">
+                                </div>
+                        </div>
 
-        <div id="gantt-placeholder" class="form-container" style="margin-top: 1.5rem; padding: 2rem; text-align: center;">
-            Selecione um empreendimento para ver o cronograma.
+                        <div class="gantt-wrapper">
+                            <div id="gantt-placeholder" class="gantt-placeholder">Selecione um empreendimento para ver o cronograma.</div>
+                            <div id="gantt-chart-container" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="activity-modal" class="gantt-modal">
+                    <div class="gantt-modal-content">
+                        <div class="gantt-modal-header">
+                            <h3 id="modal-title">Nova Atividade</h3>
+                            <button id="modal-close-btn" class="gantt-modal-close">&times;</button>
+                        </div>
+                        <div class="gantt-modal-body">
+                            <form id="gantt-modal-form">
+                                <input type="hidden" id="modal-activity-id">
+                                <div class="form-group">
+                                    <label for="modal-activity-name" class="form-label">Nome da Atividade</label>
+                                    <input type="text" id="modal-activity-name" class="form-control" required>
+                                </div>
+                                <div class="form-grid-2-col">
+                                    <div class="form-group">
+                                        <label for="modal-activity-stage" class="form-label">Etapa</label>
+                                        <input type="text" id="modal-activity-stage" class="form-control" placeholder="Ex: Fundação, Acabamento">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="modal-duration" class="form-label">Duração (dias)</label>
+                                        <input type="number" id="modal-duration" class="form-control" min="1">
+                                    </div>
+                                </div>
+                                <div class="form-grid-2-col">
+                                    <div class="form-group">
+                                        <label for="modal-start-date" class="form-label">Data de Início</label>
+                                        <input type="date" id="modal-start-date" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="modal-end-date" class="form-label">Data de Fim</label>
+                                        <input type="date" id="modal-end-date" class="form-control" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="modal-activity-desc" class="form-label">Descrição</label>
+                                    <textarea id="modal-activity-desc" class="form-control" rows="3"></textarea>
+                                </div>
+                                <div class="gantt-modal-footer">
+                                    <button type="button" id="modal-cancel-btn" class="btn btn-outline-form">Cancelar</button>
+                                    <button type="submit" id="modal-save-btn" class="btn btn-primary-form">Salvar Atividade</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
         </div>
-      </main>
     </div>
-  </div>
 
-  <div id="activity-modal" class="modal-overlay">
-      <div class="modal-container">
-          <header class="modal-header">
-              <h3 id="modal-title" class="modal-title">Nova Atividade</h3>
-              <button id="modal-close-btn" class="modal-close-btn">&times;</button>
-          </header>
-          <form id="gantt-modal-form" class="modal-body">
-              <input type="hidden" id="modal-activity-id">
-              <div class="form-group">
-                  <label for="modal-activity-name" class="form-label">Nome da Atividade *</label>
-                  <input type="text" id="modal-activity-name" class="form-control" placeholder="Ex: Alvenaria do 1º Pavimento" required>
-              </div>
-               <div class="form-group">
-                  <label for="modal-activity-stage" class="form-label">Etapa</label>
-                  <input type="text" id="modal-activity-stage" class="form-control" placeholder="Ex: Acabamentos">
-              </div>
-              <div class="form-grid-2-col">
-                  <div class="form-group">
-                      <label for="modal-start-date" class="form-label">Data de Início *</label>
-                      <input type="date" id="modal-start-date" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                      <label for="modal-duration" class="form-label">Duração (dias)</label>
-                      <input type="number" id="modal-duration" class="form-control" min="1">
-                  </div>
-              </div>
-               <div class="form-group">
-                  <label for="modal-end-date" class="form-label">Data de Fim *</label>
-                  <input type="date" id="modal-end-date" class="form-control" required>
-              </div>
-              <div class="form-group">
-                  <label for="modal-activity-desc" class="form-label">Descrição</label>
-                  <textarea id="modal-activity-desc" class="form-control" rows="3"></textarea>
-              </div>
-          </form>
-          <footer class="modal-footer">
-              <button type="button" id="modal-cancel-btn" class="btn btn-outline-form">Cancelar</button>
-              <button type="submit" form="gantt-modal-form" id="modal-save-btn" class="btn btn-success-form">Salvar Atividade</button>
-          </footer>
-      </div>
-  </div>
+    <script type="module">
+        // Importações essenciais do Firebase e do sistema
+        import { app } from './js/firebase-config.js';
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
+        import { initializeGanttModule } from './js/gantt.js';
 
-  <script type="module">
-    import { app } from './js/firebase-config.js';
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showToast } from './js/common.js';
-    import { initializeGanttModule } from './js/gantt.js';
+        // Função assíncrona para carregar a página corretamente
+        async function initializePage() {
+            // 1. Carrega o componente da sidebar
+            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
+            
+            // 2. Prepara as instâncias do Firebase
+            const auth = getAuth(app);
+            const db = getFirestore(app); // Prepara a conexão com o banco de dados aqui
+            
+            // 3. Verifica se o usuário está logado
+            checkAuthAndRedirect(auth, 'index.html', (user) => {
+                // Se estiver logado, inicializa a UI comum (cabeçalho, etc.)
+                initializeCommonUI(user); 
+                initializeSidebarToggle();
+                
+                // 4. Finalmente, inicializa o módulo do Gantt, passando a conexão 'db'
+                initializeGanttModule(db);
+            });
+        }
 
-    async function initializePage() {
-        await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        checkAuthAndRedirect(auth, 'index.html', (user) => {
-            initializeCommonUI(user);
-            initializeGanttModule(db);
-            initializeSidebarToggle(); 
-        });
-    }
-
-    initializePage();
-  </script>
+        // Executa a inicialização da página
+        initializePage();
+    </script>
 </body>
 </html>

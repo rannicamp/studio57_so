@@ -1,7 +1,7 @@
-// public/js/gantt.js (CAMINHO DE IMPORTAÇÃO CORRIGIDO)
+// public/js/gantt.js (CORRIGIDO)
 import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, where, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { APP_COLLECTION_ID } from "./firebase-config.js";
-import { showToast } from './common.js'; // <-- CORREÇÃO APLICADA AQUI
+import { showToast } from './common.js';
 
 export function initializeGanttModule(db) {
     
@@ -9,6 +9,7 @@ export function initializeGanttModule(db) {
     const selectEmpreendimento = document.getElementById("select-empreendimento");
     const ganttChartContainer = document.getElementById("gantt-chart-container");
     const ganttPlaceholder = document.getElementById("gantt-placeholder");
+    const ganttHeaderControls = document.getElementById("gantt-header-controls");
     
     // Controles do Modal
     const modal = document.getElementById('activity-modal');
@@ -26,12 +27,11 @@ export function initializeGanttModule(db) {
     const modalCloseBtn = document.getElementById('modal-close-btn');
 
     let currentActivities = [];
-    const viewModes = ['day', 'week', 'month'];
-    let currentViewModeIndex = 0;
-    let dayWidths = [50, 14, 4];
+    let dayWidths = [60, 40, 20];
+    let currentDayWidthIndex = 0;
 
-    // Lógica de Cores
-    const stageColors = {};
+    // Lógica de Cores por Etapa
+    let stageColors = {}; // <-- CORREÇÃO: Alterado de 'const' para 'let'
     const colorPalette = ["#3b82f6", "#10b981", "#f97316", "#8b5cf6", "#ef4444", "#14b8a6", "#6366f1", "#f59e0b"];
     let nextColorIndex = 0;
     
@@ -86,11 +86,13 @@ export function initializeGanttModule(db) {
             modalTitle.textContent = 'Nova Atividade';
             modalActivityId.value = '';
         }
-        modal.classList.add('active');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
     }
 
     function closeModal() {
-        modal.classList.remove('active');
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 300);
     }
     
     async function saveModalData(e) {
@@ -136,63 +138,60 @@ export function initializeGanttModule(db) {
         ganttChartContainer.style.display = 'block';
         ganttPlaceholder.style.display = 'none';
         ganttChartContainer.innerHTML = '';
+        renderHeaderControls();
 
         const activities = currentActivities;
         if (activities.length === 0) {
             const emptyMessage = document.createElement('div');
-            emptyMessage.innerHTML = '<p style="padding: 2rem; text-align: center;">Nenhuma atividade cadastrada para este empreendimento.</p>';
-            ganttChartContainer.appendChild(renderHeaderControls());
+            emptyMessage.className = 'gantt-empty-message';
+            emptyMessage.innerHTML = '<p>Nenhuma atividade cadastrada para este empreendimento.</p><p>Clique em "Adicionar Atividade" para começar.</p>';
             ganttChartContainer.appendChild(emptyMessage);
             return;
         }
 
-        const viewMode = viewModes[currentViewModeIndex];
-        const dayWidth = dayWidths[currentViewModeIndex];
+        const dayWidth = dayWidths[currentDayWidthIndex];
 
         activities.sort((a, b) => a.dataInicio.seconds - b.dataInicio.seconds);
         const projectStartDate = new Date(activities[0].dataInicio.seconds * 1000);
-        projectStartDate.setDate(projectStartDate.getDate() - 5);
+        projectStartDate.setDate(projectStartDate.getDate() - 7);
         const projectEndDate = new Date(Math.max(...activities.map(a => a.dataFim.seconds)) * 1000);
-        projectEndDate.setDate(projectEndDate.getDate() + 5);
+        projectEndDate.setDate(projectEndDate.getDate() + 7);
         
-        const headerControls = renderHeaderControls();
-        const mainChart = renderMainChart(activities, projectStartDate, projectEndDate, dayWidth, viewMode);
-        
-        ganttChartContainer.append(headerControls, mainChart);
+        const mainChart = renderMainChart(activities, projectStartDate, projectEndDate, dayWidth);
+        ganttChartContainer.appendChild(mainChart);
     }
     
     function renderHeaderControls() {
-        const controls = document.createElement('div');
-        controls.className = 'gantt-header-controls';
+        ganttHeaderControls.innerHTML = '';
         
         const btn = document.createElement('button');
-        btn.className = 'btn btn-primary';
+        btn.className = 'btn btn-primary-form';
         btn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Atividade';
         btn.onclick = () => openModal();
 
         const zoomControls = document.createElement('div');
         zoomControls.className = 'gantt-view-controls';
-        zoomControls.innerHTML = `<label class="form-label" style="margin-bottom: 0;">Zoom:</label><button class="btn btn-outline-form btn-zoom" title="Aumentar Zoom">+</button><button class="btn btn-outline-form btn-zoom" title="Diminuir Zoom">−</button>`;
+        zoomControls.innerHTML = `
+            <button class="btn btn-outline-form btn-zoom" title="Aumentar Zoom"><i class="fas fa-search-plus"></i></button>
+            <button class="btn btn-outline-form btn-zoom" title="Diminuir Zoom"><i class="fas fa-search-minus"></i></button>`;
         
-        controls.append(btn, zoomControls);
+        ganttHeaderControls.append(btn, zoomControls);
 
+        zoomControls.querySelector('button:nth-child(1)').onclick = () => {
+            currentDayWidthIndex = Math.max(currentDayWidthIndex - 1, 0);
+            renderGantt();
+        };
         zoomControls.querySelector('button:nth-child(2)').onclick = () => {
-            currentViewModeIndex = Math.max(currentViewModeIndex - 1, 0);
+            currentDayWidthIndex = Math.min(currentDayWidthIndex + 1, dayWidths.length - 1);
             renderGantt();
         };
-        zoomControls.querySelector('button:nth-child(3)').onclick = () => {
-             currentViewModeIndex = Math.min(currentViewModeIndex + 1, viewModes.length - 1);
-            renderGantt();
-        };
-
-        return controls;
     }
     
-    function renderMainChart(activities, projectStartDate, projectEndDate, dayWidth, viewMode) {
+    function renderMainChart(activities, projectStartDate, projectEndDate, dayWidth) {
         const main = document.createElement('div');
         main.className = 'gantt-chart-main';
         const sidebar = renderSidebar(activities);
-        const timeline = renderTimeline(activities, projectStartDate, projectEndDate, dayWidth, viewMode);
+        const timeline = renderTimeline(activities, projectStartDate, projectEndDate, dayWidth);
         main.append(sidebar, timeline);
         return main;
     }
@@ -202,44 +201,58 @@ export function initializeGanttModule(db) {
         sidebar.className = 'gantt-sidebar';
         
         const header = document.createElement('div');
-        header.className = 'gantt-header-title';
-        header.textContent = 'Etapa / Atividade';
+        header.className = 'gantt-sidebar-header';
+        header.textContent = 'Atividades';
         sidebar.appendChild(header);
 
+        const tasksList = document.createElement('div');
+        tasksList.className = 'gantt-sidebar-tasks';
         activities.forEach(activity => {
             const taskName = document.createElement('div');
             taskName.className = 'gantt-task-name';
-            taskName.innerHTML = `<strong>${activity.etapa || 'Geral'}</strong>: ${activity.nome}`;
-            taskName.title = activity.nome;
+            taskName.innerHTML = `<span class="gantt-task-stage" style="background-color: ${getColorForStage(activity.etapa)}"></span> ${activity.nome}`;
+            taskName.title = `${activity.etapa || 'Geral'}: ${activity.nome}`;
             taskName.onclick = () => openModal(activity);
-            sidebar.appendChild(taskName);
+            tasksList.appendChild(taskName);
         });
+        sidebar.appendChild(tasksList);
         return sidebar;
     }
 
-    function renderTimeline(activities, projectStartDate, projectEndDate, dayWidth, viewMode) { 
+    function renderTimeline(activities, projectStartDate, projectEndDate, dayWidth) { 
         const timelineContainer = document.createElement('div');
         timelineContainer.className = 'gantt-timeline-container';
+        
         const timeline = document.createElement('div');
         timeline.className = 'gantt-timeline';
-        const daysInProject = getDaysBetween(projectStartDate, projectEndDate);
-        timeline.style.width = `${daysInProject * dayWidth}px`;
-        const header = renderTimelineHeader(projectStartDate, daysInProject, dayWidth, viewMode);
-        const grid = renderTimelineGrid(activities, daysInProject, dayWidth);
-        activities.forEach((activity, index) => grid.appendChild(renderTaskBar(activity, projectStartDate, dayWidth, index)));
-        const todayMarker = renderTodayMarker(projectStartDate, dayWidth);
+        
+        const totalDays = getDaysBetween(projectStartDate, projectEndDate) + 1;
+        timeline.style.width = `${totalDays * dayWidth}px`;
+
+        const header = renderTimelineHeader(projectStartDate, totalDays, dayWidth);
+        const grid = renderTimelineGrid(activities, totalDays, dayWidth);
+        
+        activities.forEach((activity, index) => {
+            const bar = renderTaskBar(activity, projectStartDate, dayWidth, index);
+            grid.appendChild(bar);
+        });
+        
+        const todayMarker = renderTodayMarker(projectStartDate, projectEndDate, dayWidth);
         if (todayMarker) grid.appendChild(todayMarker);
+
         timeline.append(header, grid);
         timelineContainer.appendChild(timeline);
+        
         setTimeout(() => {
             if (todayMarker) {
-                timelineContainer.scrollLeft = parseInt(todayMarker.style.left) - (timelineContainer.clientWidth / 2);
+                timelineContainer.scrollLeft = parseInt(todayMarker.style.left) - (timelineContainer.clientWidth / 3);
             }
         }, 100);
+        
         return timelineContainer;
     }
 
-    function renderTimelineHeader(startDate, totalDays, dayWidth, viewMode) {
+    function renderTimelineHeader(startDate, totalDays, dayWidth) {
         const headerContainer = document.createElement('div');
         headerContainer.className = 'gantt-header';
         const monthRow = document.createElement('div');
@@ -248,25 +261,31 @@ export function initializeGanttModule(db) {
         dayRow.className = 'gantt-header-row';
         let currentDate = new Date(startDate);
         currentDate.setHours(0, 0, 0, 0);
+
         let currentMonth = -1;
+        let monthCell;
 
         for (let i = 0; i < totalDays; i++) {
             const dayCell = document.createElement('div');
             dayCell.className = 'gantt-header-cell day';
+            if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+                 dayCell.classList.add('weekend');
+            }
             dayCell.style.width = `${dayWidth}px`;
-            if(dayWidth > 30) dayCell.textContent = currentDate.getDate();
+            dayCell.textContent = currentDate.getDate();
             dayRow.appendChild(dayCell);
             
             if (currentDate.getMonth() !== currentMonth) {
                 currentMonth = currentDate.getMonth();
-                const monthCell = document.createElement('div');
+                monthCell = document.createElement('div');
                 monthCell.className = 'gantt-header-cell month';
-                const daysInMonth = new Date(currentDate.getFullYear(), currentMonth + 1, 0).getDate();
-                const remainingDays = daysInMonth - currentDate.getDate() + 1;
-                monthCell.style.width = `${Math.min(remainingDays, totalDays - i) * dayWidth}px`;
                 monthCell.textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
                 monthRow.appendChild(monthCell);
+                monthCell.style.width = `${dayWidth}px`;
+            } else {
+                 monthCell.style.width = `${parseFloat(monthCell.style.width) + dayWidth}px`;
             }
+
             currentDate.setDate(currentDate.getDate() + 1);
         }
         headerContainer.append(monthRow, dayRow);
@@ -276,15 +295,25 @@ export function initializeGanttModule(db) {
     function renderTimelineGrid(activities, totalDays, dayWidth) {
         const grid = document.createElement('div');
         grid.className = 'gantt-grid';
+        
+        const gridBackground = document.createElement('div');
+        gridBackground.className = 'gantt-grid-background';
+        let currentDate = new Date();
+        for (let i = 0; i < totalDays; i++) {
+             const col = document.createElement('div');
+             col.className = 'gantt-grid-col';
+             col.style.width = `${dayWidth}px`;
+             if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+                 col.classList.add('weekend');
+             }
+             gridBackground.appendChild(col);
+             currentDate.setDate(currentDate.getDate() + 1);
+        }
+        grid.appendChild(gridBackground);
+
         activities.forEach(() => {
             const row = document.createElement('div');
             row.className = 'gantt-grid-row';
-            for (let i = 0; i < totalDays; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'gantt-grid-cell';
-                cell.style.width = `${dayWidth}px`;
-                row.appendChild(cell);
-            }
             grid.appendChild(row);
         });
         return grid;
@@ -299,7 +328,7 @@ export function initializeGanttModule(db) {
         const bar = document.createElement('div');
         bar.className = 'gantt-task-bar';
         bar.style.left = `${leftOffsetDays * dayWidth}px`;
-        bar.style.width = `${durationDays * dayWidth - 2}px`;
+        bar.style.width = `${durationDays * dayWidth}px`;
         bar.style.top = `${index * 40 + 5}px`;
         bar.style.backgroundColor = getColorForStage(activity.etapa);
         bar.textContent = activity.nome;
@@ -308,20 +337,32 @@ export function initializeGanttModule(db) {
         return bar;
     }
 
-    function renderTodayMarker(projectStartDate, dayWidth) {
+    function renderTodayMarker(projectStartDate, projectEndDate, dayWidth) {
         const today = new Date();
-        today.setHours(0,0,0,0);
-        projectStartDate.setHours(0,0,0,0);
-        if (today < projectStartDate) return null;
+        today.setHours(0, 0, 0, 0);
+        projectStartDate.setHours(0, 0, 0, 0);
+
+        if (today < projectStartDate || today > projectEndDate) return null;
+
         const leftOffsetDays = getDaysBetween(projectStartDate, today);
         const marker = document.createElement('div');
         marker.className = 'gantt-today-marker';
         marker.style.left = `${leftOffsetDays * dayWidth + (dayWidth / 2)}px`;
+        
+        const label = document.createElement('div');
+        label.className = 'gantt-today-label';
+        label.textContent = 'Hoje';
+        marker.appendChild(label);
+
         return marker;
     }
 
     function getDaysBetween(date1, date2) {
-        return Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
+        const d1 = new Date(date1);
+        const d2 = new Date(date2);
+        d1.setHours(0, 0, 0, 0);
+        d2.setHours(0, 0, 0, 0);
+        return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
     }
 
     function addDays(date, days) {
@@ -336,20 +377,25 @@ export function initializeGanttModule(db) {
             ganttChartContainer.style.display = 'none';
             ganttPlaceholder.style.display = 'block';
             ganttPlaceholder.textContent = "Selecione um empreendimento para ver o cronograma.";
+            ganttHeaderControls.innerHTML = '';
             return;
         }
         ganttPlaceholder.style.display = 'block';
         ganttPlaceholder.textContent = "Carregando cronograma...";
         try {
             const atividadesRef = collection(db, `artifacts/${APP_COLLECTION_ID}/atividades`);
-            const q = query(atividadesRef, where("empreendimentoId", "==", empId));
+            const q = query(atividadesRef, where("empreendimentoId", "==", empId), orderBy("dataInicio"));
             const snapshot = await getDocs(q);
             currentActivities = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => a.dataInicio && a.dataFim);
+            nextColorIndex = 0;
+            stageColors = {};
             renderGantt();
         } catch (e) {
             console.error("Erro ao carregar atividades:", e);
-            ganttPlaceholder.textContent = "Ocorreu um erro ao carregar o cronograma.";
-            showToast('error', 'Erro de Rede', 'Não foi possível carregar as atividades.');
+            ganttChartContainer.style.display = 'none';
+            ganttPlaceholder.style.display = 'block';
+            ganttPlaceholder.textContent = 'Ocorreu um erro ao carregar o cronograma.';
+            showToast('error', 'Erro', 'Não foi possível carregar as atividades. Verifique o console para mais detalhes.');
         }
     }
     
@@ -357,7 +403,7 @@ export function initializeGanttModule(db) {
         selectEmpreendimento.innerHTML = '<option value="">Carregando...</option>';
         try {
             const empreendimentosRef = collection(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`);
-            const snapshot = await getDocs(query(empreendimentosRef));
+            const snapshot = await getDocs(query(empreendimentosRef, orderBy("nomeEmpreendimento")));
             if (snapshot.empty) {
                 selectEmpreendimento.innerHTML = '<option value="">Nenhum empreendimento cadastrado</option>';
                 return;
@@ -380,7 +426,10 @@ export function initializeGanttModule(db) {
     modalForm.addEventListener('submit', saveModalData);
     modalCancelBtn.addEventListener('click', closeModal);
     modalCloseBtn.addEventListener('click', closeModal);
-    modalStartDate.addEventListener('change', calculateEndDate);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    modalStartDate.addEventListener('change', calculateDuration);
     modalEndDate.addEventListener('change', calculateDuration);
     modalDuration.addEventListener('input', calculateEndDate);
 

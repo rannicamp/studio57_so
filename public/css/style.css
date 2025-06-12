@@ -193,209 +193,14 @@ main.content-scrollable { flex: 1; padding: 1.5rem; overflow-y: auto; }
 .form-body { padding: 1.5rem; }
 .form-section { display: none; }
 .form-section.active { display: block; }
-.form-grid-2-col { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem 1.5rem; }
+.form-grid-2-col { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem 1.5rem; }
 .form-group { margin-bottom: 1rem; }
 .form-label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--color-dark); }
 .form-control { width: 100%; padding: 0.75rem; border: 1px solid var(--color-light-gray); border-radius: 6px; font-size: 0.9rem; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
 .form-control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 .form-group p { margin-top: 0; line-height: 1.5; color: var(--color-dark); }
-.photo-upload-container { display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; }
-.photo-preview-form { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--color-light-gray); background-color: var(--color-bg-light); }
-.file-info-text { font-size: 0.8rem; color: var(--color-dark-gray); margin-top: -0.5rem; }
-.personal-info-grid { display: grid; grid-template-columns: auto 1fr; align-items: flex-start; gap: 2.5rem; }
-.form-divider { border: none; border-top: 1px solid var(--color-bg-body); margin: 2rem 0; }
-@media (max-width: 768px) { .personal-info-grid { grid-template-columns: 1fr; } }
 
-/* --- RDO (Formulário e Visualização) --- */
-.checkbox-group, .badge-group { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
-.rdo-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    padding: 0;
-    border: 1px solid var(--color-light-gray);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    background-color: var(--color-white);
-}
-.rdo-list-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    transition: background-color 0.2s;
-    border-bottom: 1px solid var(--color-bg-body);
-}
-.rdo-list-container > .rdo-list-row:last-child { border-bottom: none; }
-.rdo-list-row:hover { background-color: var(--color-bg-light); }
-.rdo-list-row .item-name {
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-grow: 1;
-}
-.rdo-list-row .item-name .fa-fw { color: var(--color-dark-gray); }
-.rdo-list-row .item-actions { display: flex; gap: 0.5rem; }
-.rdo-list-row .btn-attendance, .rdo-list-row .status-select {
-    font-size: 0.75rem;
-    padding: 0.4rem 0.8rem;
-    border: 1px solid var(--color-light-gray);
-    background-color: var(--color-white);
-    border-radius: 6px;
-    cursor: pointer;
-}
-.rdo-list-row .btn-attendance:hover { background-color: var(--color-bg-light); }
-.rdo-list-row .btn-attendance.active { color: var(--color-white); border-color: transparent; }
-.rdo-list-row .btn-attendance.present.active { background-color: var(--color-success); }
-.rdo-list-row .btn-attendance.absent.active { background-color: var(--color-danger); }
-.rdo-list-row .status-select {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 0.5rem center;
-    background-size: 1em;
-    padding-right: 1.8rem;
-}
-
-/* SEÇÃO DE OCORRÊNCIAS DINÂMICAS */
-#observations-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-.observation-row {
-    display: grid;
-    grid-template-columns: 200px 1fr auto;
-    gap: 1rem;
-    align-items: center;
-}
-.remove-observation-btn {
-    background: none;
-    border: none;
-    color: var(--color-dark-gray);
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 0.5rem;
-}
-.remove-observation-btn:hover { color: var(--color-danger); }
-
-/* UPLOAD DE FOTOS NO RDO */
-#dynamic-photo-upload-container { display: flex; flex-direction: column; gap: 1.5rem; }
-.photo-upload-entry {
-    display: grid;
-    grid-template-columns: 120px 1fr auto;
-    gap: 1rem;
-    align-items: flex-start;
-    padding: 1rem;
-    border: 1px solid var(--color-light-gray);
-    border-radius: var(--border-radius);
-    background-color: var(--color-white);
-}
-.photo-upload-preview {
-    width: 100px;
-    height: 100px;
-    border-radius: var(--border-radius);
-    background-color: var(--color-bg-light);
-    background-size: cover;
-    background-position: center;
-    border: 2px dashed var(--color-light-gray);
-    cursor: pointer;
-}
-.photo-upload-details { display: flex; flex-direction: column; gap: 0.5rem; }
-.photo-upload-entry .form-control { margin-bottom: 0; }
-.photo-upload-entry .remove-photo-btn { align-self: center; }
-
-/* Visualização do RDO */
-.badge {
-    padding: 0.3em 0.7em;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-white);
-    text-transform: capitalize;
-}
-.badge.status-presente, .badge.status-concluido, .badge.status-concluído { background-color: var(--color-success); }
-.badge.status-falta { background-color: var(--color-danger); }
-.badge.status-em-andamento { background-color: var(--color-primary); }
-.badge.status-paralisado { background-color: var(--color-warning); color: var(--color-dark); }
-.badge.status-nao-iniciado, .badge.status-não-iniciado { background-color: var(--color-dark-gray); }
-.badge.weather-badge { background-color: var(--color-info); }
-.rdo-view-observations {
-    background-color: var(--color-bg-light);
-    border: 1px solid var(--color-light-gray);
-    border-left: 4px solid var(--color-primary);
-    padding: 1.25rem;
-    border-radius: var(--border-radius);
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 0.95rem;
-    line-height: 1.6;
-}
-.rdo-view-list .rdo-list-row { border-bottom: none; padding: 0.5rem; }
-.rdo-view-list .rdo-list-row:hover { background-color: var(--color-bg-light); }
-
-/* Galeria de Fotos da Página de Visualização */
-.photo-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-    padding-top: 1rem;
-}
-.photo-card {
-    background-color: var(--color-white);
-    border: 1px solid var(--color-light-gray);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    display: flex;
-    flex-direction: column;
-}
-.photo-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
-.photo-img-container {
-    height: 200px;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-bottom: 1px solid var(--color-light-gray);
-}
-.photo-card-body { padding: 1rem; flex-grow: 1; display: flex; flex-direction: column; }
-.photo-description { margin: 0 0 1rem 0; font-size: 0.9rem; color: var(--color-dark); flex-grow: 1; }
-.photo-date { margin: 0; font-size: 0.8rem; color: var(--color-dark-gray); display: flex; align-items: center; gap: 0.5rem; }
-
-/* Galeria Lightbox */
-.lightbox-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(5px);
-    display: none; align-items: center; justify-content: center;
-    z-index: 2000; opacity: 0; transition: opacity 0.3s ease;
-}
-.lightbox-overlay.show { opacity: 1; display: flex; }
-.lightbox-content {
-    position: relative; text-align: center; max-width: 90vw;
-    max-height: 90vh; display: flex; flex-direction: column; gap: 1rem;
-}
-.lightbox-image {
-    max-width: 100%; max-height: 80vh; object-fit: contain;
-    border-radius: var(--border-radius);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-}
-.lightbox-caption { color: var(--color-white); font-size: 1rem; font-weight: 500; }
-.lightbox-close, .lightbox-prev, .lightbox-next {
-    position: absolute; color: var(--color-white); font-size: 2.5rem; font-weight: bold;
-    cursor: pointer; user-select: none; transition: color 0.2s ease; z-index: 2001;
-}
-.lightbox-close { top: 1rem; right: 2rem; line-height: 1; }
-.lightbox-prev, .lightbox-next { top: 50%; transform: translateY(-50%); padding: 1rem; }
-.lightbox-prev { left: 1rem; }
-.lightbox-next { right: 1rem; }
-.lightbox-close:hover, .lightbox-prev:hover, .lightbox-next:hover { color: var(--color-light-gray); }
-
-/* --- [NOVO] ESTILOS PARA A PÁGINA 'LISTA DE RDO' --- */
+/* --- Barra de Ações e Filtros --- */
 .actions-bar {
     display: flex;
     justify-content: space-between;
@@ -404,22 +209,19 @@ main.content-scrollable { flex: 1; padding: 1.5rem; overflow-y: auto; }
     flex-wrap: wrap;
     gap: 1rem;
 }
-
 .filters-container {
     display: flex;
     gap: 1.5rem;
     flex-wrap: wrap;
     align-items: flex-end;
 }
-
 .custom-date-filter {
     display: flex;
     gap: 1rem;
     align-items: flex-end;
 }
 
-/* O container principal dos RDOs agora é o .form-container, de acordo com o HTML */
-/* A classe .rdo-list-container dentro dele precisa ser estilizada */
+/* --- ESTILOS PARA A PÁGINA 'LISTA DE RDO' --- */
 #lista-rdo-page .rdo-list-container {
     background-color: var(--color-white);
     border-radius: var(--border-radius);
@@ -427,7 +229,6 @@ main.content-scrollable { flex: 1; padding: 1.5rem; overflow-y: auto; }
     overflow: hidden;
     box-shadow: var(--shadow-sm);
 }
-
 .rdo-list-header, .rdo-list-item {
     display: grid;
     grid-template-columns: 1fr 2fr 1.5fr 0.8fr 0.8fr 1.2fr; /* 6 colunas ajustadas */
@@ -435,7 +236,6 @@ main.content-scrollable { flex: 1; padding: 1.5rem; overflow-y: auto; }
     align-items: center;
     padding: 0.8rem 1.5rem;
 }
-
 .rdo-list-header {
     background-color: var(--color-bg-light);
     color: var(--color-dark-gray);
@@ -444,28 +244,257 @@ main.content-scrollable { flex: 1; padding: 1.5rem; overflow-y: auto; }
     text-transform: uppercase;
     border-bottom: 1px solid var(--color-light-gray);
 }
-
 .rdo-list-item {
     border-bottom: 1px solid var(--color-bg-body);
     transition: background-color 0.2s ease;
     font-size: 0.9rem;
 }
+.rdo-list-body > .rdo-list-item:last-child { border-bottom: none; }
+.rdo-list-body > .rdo-list-item:hover { background-color: #f4f8fe; }
+.rdo-list-item > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rdo-list-action { text-align: right; overflow: visible; }
 
-.rdo-list-body > .rdo-list-item:last-child {
-    border-bottom: none;
+
+/* --- [NOVO] CRONOGRAMA (GANTT) --- */
+
+.gantt-wrapper {
+    border: 1px solid var(--color-light-gray);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background-color: var(--color-bg-light);
 }
 
-.rdo-list-body > .rdo-list-item:hover {
-    background-color: #f4f8fe;
+#gantt-placeholder, .gantt-empty-message {
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--color-dark-gray);
+}
+.gantt-empty-message p:first-child {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-dark);
 }
 
-.rdo-list-item > div {
+.gantt-view-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.gantt-chart-main {
+    display: flex;
+    width: 100%;
+    height: 600px; /* Altura padrão do gráfico */
+}
+
+/* Sidebar (Lista de Tarefas) */
+.gantt-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--color-light-gray);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-white);
+}
+.gantt-sidebar-header {
+    padding: 0.8rem 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-light-gray);
+    background-color: var(--color-bg-light);
+    flex-shrink: 0;
+}
+.gantt-sidebar-tasks {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.gantt-task-name {
+    height: 40px; /* Mesma altura da linha do grid */
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--color-bg-body);
+    font-size: 0.875rem;
+    cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: background-color 0.2s ease;
+}
+.gantt-task-name:hover {
+    background-color: var(--color-primary-light);
+}
+.gantt-task-stage {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
 }
 
-.rdo-list-action {
-    text-align: right;
-    overflow: visible; /* Garante que o botão não seja cortado */
+/* Timeline (Gráfico) */
+.gantt-timeline-container {
+    flex-grow: 1;
+    overflow-x: auto;
+    background-color: var(--color-white);
+}
+.gantt-timeline {
+    position: relative;
+    user-select: none;
+}
+.gantt-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--color-white);
+}
+.gantt-header-row {
+    display: flex;
+    border-bottom: 1px solid var(--color-light-gray);
+}
+.gantt-header-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-dark-gray);
+    border-right: 1px solid var(--color-bg-body);
+}
+.gantt-header-cell.month {
+    justify-content: flex-start;
+    padding-left: 0.5rem;
+    font-weight: 600;
+    color: var(--color-dark);
+}
+.gantt-header-cell.weekend {
+    background-color: var(--color-bg-light);
+}
+
+/* Grid e Barras */
+.gantt-grid {
+    position: relative;
+}
+.gantt-grid-background {
+    display: flex;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+.gantt-grid-col {
+    border-right: 1px solid var(--color-bg-body);
+}
+.gantt-grid-col.weekend {
+    background-color: var(--color-bg-light);
+}
+.gantt-grid-row {
+    height: 40px;
+    border-bottom: 1px solid var(--color-bg-body);
+}
+
+.gantt-task-bar {
+    position: absolute;
+    z-index: 5;
+    height: 28px;
+    margin-top: -34px; /* -(altura_linha/2) - (altura_barra/2) + altura_linha -> -(40/2) - (28/2) + 40 = 6 */
+    border-radius: 4px;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0 0.5rem;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+.gantt-task-bar:hover {
+    filter: brightness(1.1);
+    box-shadow: var(--shadow-md);
+}
+
+/* Marcador de Hoje */
+.gantt-today-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--color-danger);
+    z-index: 8;
+}
+.gantt-today-label {
+    position: sticky;
+    top: 2px;
+    background-color: var(--color-danger);
+    color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+/* Modal do Gantt */
+.gantt-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.gantt-modal.show {
+    opacity: 1;
+}
+.gantt-modal-content {
+    background-color: var(--color-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    width: 100%;
+    max-width: 600px;
+    transform: scale(0.95);
+    transition: transform 0.3s ease-in-out;
+}
+.gantt-modal.show .gantt-modal-content {
+    transform: scale(1);
+}
+.gantt-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-light-gray);
+}
+.gantt-modal-header h3 { font-size: 1.2rem; font-weight: 600; }
+.gantt-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    font-weight: 300;
+    cursor: pointer;
+    color: var(--color-dark-gray);
+}
+.gantt-modal-body {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.gantt-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-light-gray);
+    background-color: var(--color-bg-light);
 }
