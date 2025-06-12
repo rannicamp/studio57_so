@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizar RDO - Studio 57</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.2">
+</head>
+<body>
+    <div class="page-wrapper">
+        <div id="sidebar-placeholder"></div>
+        <div class="main-content-area-wrapper">
+            <header class="main-header">
+                <h1 id="page-title-header">Visualizar Relatório Diário de Obra</h1>
+                <div class="header-user-info">
+                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
+                    <div id="current-datetime">--/--/---- --:--:--</div>
+                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+            <main class="content-scrollable">
+                <div class="toast-container" id="toastContainer"></div>
+                <div class="spinner-overlay" id="loadingSpinner"><div class="spinner"></div></div>
+
+                <div class="actions-bar" style="justify-content: flex-end;">
+                     <a href="lista-rdo.html" class="btn btn-outline-form"><i class="fas fa-arrow-left"></i> Voltar para a Lista</a>
+                </div>
+
+                <div id="rdo-details-container" class="form-container">
+                    <div class="form-body" style="padding: 2rem;">
+                        <p class="loading-message-full-page">Carregando dados do RDO...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="lightbox-overlay" class="lightbox-overlay">
+        <span class="lightbox-close" title="Fechar">&times;</span>
+        <span class="lightbox-prev" title="Anterior">&#10094;</span>
+        <span class="lightbox-next" title="Próxima">&#10095;</span>
+        <div class="lightbox-content">
+            <img src="" alt="Imagem Ampliada" class="lightbox-image">
+            <div class="lightbox-caption"></div>
+        </div>
+    </div>
+    <script type="module">
+        import { app } from './js/firebase-config.js';
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
+        import { initializeVerRdoModule } from './js/ver-rdo.js';
+
+        async function initializePage() {
+            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            
+            checkAuthAndRedirect(auth, 'index.html', (user) => {
+                initializeCommonUI(user);
+                initializeSidebarToggle();
+                initializeVerRdoModule(db);
+            });
+        }
+        initializePage();
+    </script>
+</body>
+</html>

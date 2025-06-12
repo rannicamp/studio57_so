@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDO - Relatório Diário de Obras - Studio 57</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <div id="sidebar-placeholder"></div>
+        <div class="main-content-area-wrapper">
+            <header class="main-header">
+                <h1 id="page-title-header">Relatório Diário de Obras (RDO)</h1>
+                <div class="header-user-info">
+                    <div id="user-info">Utilizador: <span class="font-semibold">A carregar...</span></div>
+                    <div id="current-datetime">--/--/---- --:--:--</div>
+                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+            <main class="content-scrollable">
+                <div class="toast-container" id="toastContainer"></div>
+                <div class="spinner-overlay" id="loadingSpinner"><div class="spinner"></div></div>
+
+                <form id="rdoForm" class="form-container">
+                    <div class="form-header">
+                        <h3 class="form-title" id="formSectionMainTitle">Novo Relatório Diário</h3>
+                        <p class="form-subtitle">Preencha as informações da obra para o dia de hoje.</p>
+                    </div>
+
+                    <div class="form-body">
+                        <!-- Cabeçalho do RDO -->
+                        <div class="form-grid-2-col">
+                            <div class="form-group">
+                                <label for="select-empreendimento" class="form-label">Empreendimento *</label>
+                                <select id="select-empreendimento" class="form-control" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="rdo-date" class="form-label">Data do Relatório *</label>
+                                <input type="date" id="rdo-date" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <!-- Condições Climáticas -->
+                        <div class="form-group">
+                             <label class="form-label">Condições Climáticas</label>
+                             <div class="checkbox-group" id="weather-conditions">
+                                 <div class="form-check"><input type="checkbox" id="weather-sunny" value="Ensolarado" class="form-check-input"><label for="weather-sunny">Ensolarado</label></div>
+                                 <div class="form-check"><input type="checkbox" id="weather-cloudy" value="Nublado" class="form-check-input"><label for="weather-cloudy">Nublado</label></div>
+                                 <div class="form-check"><input type="checkbox" id="weather-rainy" value="Chuvoso" class="form-check-input"><label for="weather-rainy">Chuvoso</label></div>
+                             </div>
+                        </div>
+                        <div class="form-group">
+                             <label class="form-label">Condições de Trabalho</label>
+                             <div class="checkbox-group" id="work-conditions">
+                                <div class="form-check"><input type="radio" name="work-condition" id="work-ok" value="Praticável" class="form-check-input"><label for="work-ok">Praticável</label></div>
+                                <div class="form-check"><input type="radio" name="work-condition" id="work-nok" value="Impraticável" class="form-check-input"><label for="work-nok">Impraticável</label></div>
+                             </div>
+                        </div>
+                        <hr style="margin: 2rem 0;">
+
+                        <!-- Mão de Obra -->
+                        <h4 class="form-section-title">Lista de Chamada</h4>
+                        <div id="employee-list-container" class="rdo-list-container">
+                            <p>Selecione um empreendimento para ver os funcionários.</p>
+                        </div>
+                        <hr style="margin: 2rem 0;">
+
+                        <!-- Atividades -->
+                        <h4 class="form-section-title">Status das Atividades</h4>
+                        <div id="gantt-activities-container" class="rdo-list-container">
+                            <p>Selecione um empreendimento e uma data.</p>
+                        </div>
+                        <hr style="margin: 2rem 0;">
+                        
+                        <!-- Ocorrências -->
+                        <div class="form-group">
+                            <label for="observations" class="form-label">Ocorrências e Observações Gerais</label>
+                            <textarea id="observations" class="form-control" rows="3"></textarea>
+                        </div>
+                        <hr style="margin: 2rem 0;">
+
+                        <!-- Galeria de Fotos Dinâmica (NOVA ESTRUTURA) -->
+                        <h4 class="form-section-title">Fotos do Dia</h4>
+                        <div id="dynamic-photo-upload-container">
+                            <!-- As linhas de upload de foto serão adicionadas aqui pelo JS -->
+                        </div>
+                        <button type="button" id="add-photo-btn" class="btn btn-outline-form" style="margin-top: 1rem;">
+                            <i class="fas fa-camera"></i> Adicionar Foto
+                        </button>
+                    </div>
+                    
+                    <div class="form-footer">
+                        <button type="button" class="btn btn-outline-form" id="cancelFormBtn">Limpar</button>
+                        <button type="submit" class="btn btn-success-form" id="saveBtn">
+                            <i class="fas fa-save"></i>
+                            <span>Guardar RDO</span>
+                        </button>
+                    </div>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { app } from './js/firebase-config.js';
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
+        import { initializeRdoModule } from './js/rdo.js';
+
+        async function initializePage() {
+            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const storage = getStorage(app);
+            
+            checkAuthAndRedirect(auth, 'index.html', (user) => {
+                initializeCommonUI(user);
+                initializeSidebarToggle();
+                initializeRdoModule(db, storage, user); 
+            });
+        }
+        initializePage();
+    </script>
+</body>
+</html>

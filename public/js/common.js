@@ -26,10 +26,10 @@ export function checkAuthAndRedirect(auth, redirectUrl, callback = null) {
 export function initializeCommonUI(user) {
     const userInfoSpan = document.getElementById('user-info')?.querySelector('span');
     const currentDatetimeSpan = document.getElementById('current-datetime');
-    const logoutButtonHeader = document.querySelector('.main-header #logout-button-header');
-    const logoutLinkSidebar = document.getElementById('logout-link-sidebar');
-    const pageTitleH1 = document.getElementById('page-title-header'); // Usando o H1 do header
-    const navLinks = document.querySelectorAll('.sidebar .nav-link, #app-sidebar .nav-link');
+    // CORREÇÃO: Adicionado o seletor para o botão de logout da sidebar
+    const logoutButtonHeader = document.getElementById('logout-button-header');
+    const logoutButtonSidebar = document.getElementById('logout-button-sidebar'); 
+    const navLinks = document.querySelectorAll('.sidebar .nav-link');
 
     if (userInfoSpan && user && user.email) {
         userInfoSpan.textContent = user.email;
@@ -57,15 +57,13 @@ export function initializeCommonUI(user) {
     };
 
     logoutButtonHeader?.addEventListener('click', performLogout);
-    logoutLinkSidebar?.addEventListener('click', performLogout);
+    logoutButtonSidebar?.addEventListener('click', performLogout);
     
     const currentPath = window.location.pathname.split('/').pop();
     navLinks.forEach(link => {
         const linkHref = link.getAttribute('href');
         if (linkHref === currentPath) {
             link.classList.add('active');
-            const pageTitle = link.dataset.pageTitle;
-            if (pageTitleH1 && pageTitle) pageTitleH1.textContent = pageTitle;
         }
     });
 }
@@ -155,14 +153,13 @@ export async function loadHTMLComponent(elementId, filePath) {
 }
 
 /**
- * INCLUSÃO DA FUNÇÃO QUE FALTAVA
  * Inicializa a funcionalidade de recolher/expandir a barra lateral.
  */
 export function initializeSidebarToggle() {
-    // A sidebar pode ser carregada dinamicamente, então esperamos um pouco
     setTimeout(() => {
-        const sidebar = document.getElementById('app-sidebar');
-        const toggleBtn = document.getElementById('sidebar-toggle');
+        // CORREÇÃO: Alterado para os IDs corretos de sidebar.html
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('sidebar-toggle-btn');
         
         if (!sidebar || !toggleBtn) {
             console.warn("Elementos da sidebar não encontrados para inicializar o toggle.");
@@ -170,28 +167,15 @@ export function initializeSidebarToggle() {
         }
 
         const mainContent = document.querySelector('.main-content-area-wrapper');
-        const toggleIcon = toggleBtn.querySelector('i');
-        const toggleText = toggleBtn.querySelector('.link-text');
 
         const updateToggleState = (isCollapsed) => {
+            document.body.classList.toggle('sidebar-collapsed', isCollapsed);
             sidebar.classList.toggle('collapsed', isCollapsed);
             if (mainContent) {
                  mainContent.style.marginLeft = isCollapsed ? '72px' : '250px';
             }
-            if (toggleIcon && toggleText) {
-                if (isCollapsed) {
-                    toggleIcon.classList.remove('fa-chevron-left');
-                    toggleIcon.classList.add('fa-chevron-right');
-                    toggleText.textContent = 'Expandir';
-                } else {
-                    toggleIcon.classList.remove('fa-chevron-right');
-                    toggleIcon.classList.add('fa-chevron-left');
-                    toggleText.textContent = 'Recolher';
-                }
-            }
         };
 
-        // Aplica o estado salvo no localStorage
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         updateToggleState(isCollapsed);
 
@@ -199,23 +183,11 @@ export function initializeSidebarToggle() {
             e.preventDefault();
             const currentlyCollapsed = sidebar.classList.toggle('collapsed');
             localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
-            // Re-aplica o estilo de margem
+            document.body.classList.toggle('sidebar-collapsed', currentlyCollapsed);
             if (mainContent) {
                 mainContent.style.marginLeft = currentlyCollapsed ? '72px' : '250px';
             }
-            // Atualiza o ícone
-            if (toggleIcon && toggleText) {
-                 if (currentlyCollapsed) {
-                    toggleIcon.classList.remove('fa-chevron-left');
-                    toggleIcon.classList.add('fa-chevron-right');
-                    toggleText.textContent = 'Expandir';
-                } else {
-                    toggleIcon.classList.remove('fa-chevron-right');
-                    toggleIcon.classList.add('fa-chevron-left');
-                    toggleText.textContent = 'Recolher';
-                }
-            }
         });
 
-    }, 200); // Pequeno atraso para garantir que o HTML da sidebar foi carregado
+    }, 200);
 }

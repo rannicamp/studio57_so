@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de RDOs - Studio 57</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <div id="sidebar-placeholder"></div>
+        <div class="main-content-area-wrapper">
+            <header class="main-header">
+                <h1 id="page-title-header">Relatórios Diários de Obra (RDO)</h1>
+                <div class="header-user-info">
+                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
+                    <div id="current-datetime">--/--/---- --:--:--</div>
+                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+            
+            <main class="content-scrollable">
+                <div class="toast-container" id="toastContainer"></div>
+                <div class="spinner-overlay" id="loadingSpinner"><div class="spinner"></div></div>
+
+                <div class="actions-bar">
+                    <div class="filters-container">
+                        <div class="form-group">
+                            <label for="filter-empreendimento">Filtrar por Empreendimento</label>
+                            <select id="filter-empreendimento" class="form-control"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-periodo">Filtrar por Período</label>
+                            <select id="filter-periodo" class="form-control">
+                                <option value="all">Todo o Período</option>
+                                <option value="today">Hoje</option>
+                                <option value="this_week">Esta Semana</option>
+                                <option value="this_month" selected>Este Mês</option>
+                                <option value="this_year">Este Ano</option>
+                                <option value="custom">Personalizado</option>
+                            </select>
+                        </div>
+                        <div id="custom-date-container" class="custom-date-filter" style="display: none;">
+                            <div class="form-group">
+                                <label for="filter-data-inicio">De:</label>
+                                <input type="date" id="filter-data-inicio" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="filter-data-fim">Até:</label>
+                                <input type="date" id="filter-data-fim" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <a href="rdo.html" class="btn btn-primary-form"><i class="fas fa-plus"></i> Novo RDO</a>
+                </div>
+
+                <div class="form-container">
+                    <div class="rdo-list-container">
+                        <div class="rdo-list-header">
+                            <div>Data</div>
+                            <div>Empreendimento</div>
+                            <div>Responsável</div>
+                            <div>Atividades</div>
+                            <div>Presentes</div>
+                            <div>Ações</div>
+                        </div>
+                        <div id="rdo-list-body">
+                            </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { app } from './js/firebase-config.js';
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
+        import { initializeListaRdoModule } from './js/lista-rdo.js';
+
+        async function initializePage() {
+            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            
+            checkAuthAndRedirect(auth, 'index.html', (user) => {
+                initializeCommonUI(user);
+                initializeSidebarToggle();
+                initializeListaRdoModule(db);
+            });
+        }
+        initializePage();
+    </script>
+</body>
+</html>
