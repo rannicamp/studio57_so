@@ -1,4 +1,4 @@
-// public/js/ver-rdo.js (VERSÃO COM CORREÇÃO DA LIGHTBOX)
+// public/js/ver-rdo.js (VERSÃO COM CORREÇÃO DAS OCORRÊNCIAS)
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { APP_COLLECTION_ID } from './firebase-config.js';
 import { showLoading, hideLoading, showToast } from './common.js';
@@ -6,7 +6,7 @@ import { showLoading, hideLoading, showToast } from './common.js';
 export function initializeVerRdoModule(db) {
     const detailsContainer = document.getElementById('rdo-details-container').querySelector('.form-body');
 
-    // ===== LÓGICA DA LIGHTBOX (COM CORREÇÕES) =====
+    // ===== LÓGICA DA LIGHTBOX =====
     const lightbox = {
         overlay: document.getElementById('lightbox-overlay'),
         image: document.querySelector('.lightbox-image'),
@@ -22,34 +22,21 @@ export function initializeVerRdoModule(db) {
             this.currentIndex = clickedIndex;
             this.update();
             this.overlay.style.display = 'flex';
-            // Adiciona a classe 'show' para ativar a transição de opacidade
-            setTimeout(() => {
-                this.overlay.classList.add('show');
-            }, 10); // Pequeno delay para garantir que o 'display' seja aplicado antes da transição
+            setTimeout(() => { this.overlay.classList.add('show'); }, 10);
             document.body.style.overflow = 'hidden';
             this.isOpen = true;
         },
         close() {
-            // Remove a classe 'show' para iniciar a animação de desaparecimento
             this.overlay.classList.remove('show');
-            // Esconde o elemento somente após a transição terminar
-            setTimeout(() => {
-                this.overlay.style.display = 'none';
-            }, 300); // Duração da transição em ms (definida no CSS)
+            setTimeout(() => { this.overlay.style.display = 'none'; }, 300);
             document.body.style.overflow = 'auto';
             this.isOpen = false;
         },
         next() {
-            if (this.currentIndex < this.photos.length - 1) {
-                this.currentIndex++;
-                this.update();
-            }
+            if (this.currentIndex < this.photos.length - 1) { this.currentIndex++; this.update(); }
         },
         prev() {
-            if (this.currentIndex > 0) {
-                this.currentIndex--;
-                this.update();
-            }
+            if (this.currentIndex > 0) { this.currentIndex--; this.update(); }
         },
         update() {
             if (this.photos.length === 0) return;
@@ -57,28 +44,21 @@ export function initializeVerRdoModule(db) {
             this.image.src = photo.url;
             this.image.alt = photo.description;
             this.caption.textContent = photo.description;
-
             this.prevBtn.style.display = this.currentIndex > 0 ? 'block' : 'none';
             this.nextBtn.style.display = this.currentIndex < this.photos.length - 1 ? 'block' : 'none';
         },
-        setPhotos(photos) {
-            this.photos = photos;
-        },
+        setPhotos(photos) { this.photos = photos; },
         initListeners(container) {
             this.closeBtn.addEventListener('click', () => this.close());
-            this.overlay.addEventListener('click', (e) => {
-                if (e.target === this.overlay) this.close();
-            });
+            this.overlay.addEventListener('click', (e) => { if (e.target === this.overlay) this.close(); });
             this.nextBtn.addEventListener('click', () => this.next());
             this.prevBtn.addEventListener('click', () => this.prev());
-
             document.addEventListener('keydown', (e) => {
                 if (!this.isOpen) return;
                 if (e.key === 'Escape') this.close();
                 if (e.key === 'ArrowRight') this.next();
                 if (e.key === 'ArrowLeft') this.prev();
             });
-
             container.addEventListener('click', (e) => {
                 const photoCard = e.target.closest('.photo-card');
                 if (photoCard) {
@@ -92,12 +72,7 @@ export function initializeVerRdoModule(db) {
     // =============================
 
     const getRdoIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
-
-    const formatDate = (timestamp) => {
-        if (!timestamp || !timestamp.toDate) return 'N/A';
-        return timestamp.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    };
-
+    const formatDate = (timestamp) => timestamp?.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) || 'N/A';
     const createSectionTitle = (title) => `<h4 class="form-section-title">${title}</h4>`;
 
     const createInfoGrid = (data) => `
@@ -105,16 +80,16 @@ export function initializeVerRdoModule(db) {
             <div class="form-group"><label class="form-label">Empreendimento</label><p>${data.empreendimentoNome || 'Não informado'}</p></div>
             <div class="form-group"><label class="form-label">Data do Relatório</label><p>${formatDate(data.dataRelatorio)}</p></div>
             <div class="form-group"><label class="form-label">Responsável</label><p>${data.responsavelRdo?.nome || 'Não informado'}</p></div>
-            <div class="form-group"><label class="form-label">Condições de Trabalho</label><p class="capitalize">${data.condicoesTrabalho || 'Não informado'}</p></div>
+            <div class="form-group"><label class="form-label">Condições de Trabalho</label><p class="capitalize">${(data.condicoesTrabalho || []).join(', ') || 'Não informado'}</p></div>
         </div>
-        <div class="form-group"><label class="form-label">Condições Climáticas</label><div class="badge-group">${data.condicoesClimaticas.map(c => `<span class="badge weather-badge">${c}</span>`).join(' ') || 'Nenhuma'}</div></div>
+        <div class="form-group"><label class="form-label">Condições Climáticas</label><div class="badge-group">${(data.condicoesClimaticas || []).map(c => `<span class="badge weather-badge">${c}</span>`).join(' ') || 'Nenhuma'}</div></div>
         <hr class="form-divider">
     `;
 
     const createTeamList = (team) => `
         ${createSectionTitle('Lista de Chamada')}
         <div class="rdo-view-list">
-            ${team.length > 0 ? team.map(person => `<div class="rdo-list-row"><span class="item-name"><i class="fas fa-user fa-fw"></i> ${person.nome}</span><span class="badge status-${person.status}">${person.status}</span></div>`).join('') : '<p>Nenhum funcionário registrado.</p>'}
+            ${(team || []).length > 0 ? team.map(person => `<div class="rdo-list-row"><span class="item-name"><i class="fas fa-user fa-fw"></i> ${person.nome}</span><span class="badge status-${person.status}">${person.status}</span></div>`).join('') : '<p>Nenhum funcionário registrado.</p>'}
         </div>
         <hr class="form-divider">
     `;
@@ -122,20 +97,37 @@ export function initializeVerRdoModule(db) {
     const createActivityList = (activities) => `
         ${createSectionTitle('Status das Atividades do Cronograma')}
         <div class="rdo-view-list">
-             ${activities.length > 0 ? activities.map(activity => `<div class="rdo-list-row"><span class="item-name"><i class="fas fa-tasks fa-fw"></i> ${activity.nome}</span><span class="badge status-${activity.status.replace(/\s+/g, '-')}">${activity.status}</span></div>`).join('') : '<p>Nenhuma atividade registrada.</p>'}
+             ${(activities || []).length > 0 ? activities.map(activity => `<div class="rdo-list-row"><span class="item-name"><i class="fas fa-tasks fa-fw"></i> ${activity.nome}</span><span class="badge status-${activity.status.replace(/\s+/g, '-')}">${activity.status}</span></div>`).join('') : '<p>Nenhuma atividade registrada.</p>'}
         </div>
         <hr class="form-divider">
     `;
 
-    const createObservations = (text) => `
-        ${createSectionTitle('Ocorrências e Observações Gerais')}
-        <div class="rdo-view-observations">${text || 'Nenhuma observação registrada.'}</div>
-        <hr class="form-divider">
-    `;
+    // *** FUNÇÃO CORRIGIDA PARA EXIBIR OCORRÊNCIAS ***
+    const createObservations = (ocorrencias) => {
+        let content = `${createSectionTitle('Ocorrências e Observações Gerais')}`;
+        const ocorrenciasArray = ocorrencias || [];
+
+        if (ocorrenciasArray.length === 0) {
+            content += '<div class="rdo-view-observations">Nenhuma ocorrência registrada.</div>';
+        } else {
+            content += '<div class="rdo-view-observations-list">';
+            ocorrenciasArray.forEach(item => {
+                content += `
+                    <div class="observation-item severity-${item.severity || 'informativa'}">
+                        <strong class="observation-severity-tag">${item.severity || 'Informativa'}</strong>
+                        <p class="observation-text">${item.text}</p>
+                    </div>
+                `;
+            });
+            content += '</div>';
+        }
+        content += '<hr class="form-divider">';
+        return content;
+    };
 
     const createPhotoGallery = (photos, rdoDate) => {
         if (!photos || photos.length === 0) return '';
-        lightbox.setPhotos(photos); // Armazena as fotos para a lightbox usar
+        lightbox.setPhotos(photos);
         return `
             ${createSectionTitle('Relatório Fotográfico')}
             <div class="photo-gallery">
@@ -166,12 +158,11 @@ export function initializeVerRdoModule(db) {
                 const data = rdoSnap.data();
                 let content = '';
                 content += createInfoGrid(data);
-                content += createTeamList(data.maoDeObra || []);
-                content += createActivityList(data.statusAtividades || []);
-                content += createObservations(data.ocorrencias);
+                content += createTeamList(data.maoDeObra);
+                content += createActivityList(data.statusAtividades);
+                content += createObservations(data.ocorrencias); // Chama a função corrigida
                 content += createPhotoGallery(data.fotos, formatDate(data.dataRelatorio));
                 detailsContainer.innerHTML = content;
-
                 lightbox.initListeners(detailsContainer);
             } else {
                 showToast('error', 'Erro', 'RDO não encontrado.');

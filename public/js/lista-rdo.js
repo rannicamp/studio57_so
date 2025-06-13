@@ -1,4 +1,4 @@
-// public/js/lista-rdo.js (VERSÃO FINAL COM NOVAS COLUNAS E LÓGICA DE 'PRESENTES')
+// public/js/lista-rdo.js (VERSÃO COM BOTÃO EDITAR E LÓGICA DE TRAVAMENTO CORRIGIDA)
 import { collection, getDocs, query, orderBy, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { APP_COLLECTION_ID } from './firebase-config.js';
 import { showLoading, hideLoading, showToast } from './common.js';
@@ -120,27 +120,42 @@ export function initializeListaRdoModule(db) {
         }
     }
 
+    // *** FUNÇÃO ATUALIZADA COM LÓGICA DE TRAVAMENTO CORRIGIDA ***
     function createRdoRow(id, rdo) {
         const row = document.createElement('div');
         row.className = 'rdo-list-item';
         row.dataset.id = id;
         
-        const dataRelatorio = rdo.dataRelatorio.toDate().toLocaleDateString('pt-BR');
+        const rdoDate = rdo.dataRelatorio.toDate();
+        const dataRelatorioFormatada = rdoDate.toLocaleDateString('pt-BR');
         const responsavel = rdo.responsavelRdo?.nome || 'Não informado';
         const empreendimento = rdo.empreendimentoNome || 'N/A';
         const atividadesReportadas = rdo.statusAtividades?.length || 0;
-        
-        // **NOVA LÓGICA** para calcular funcionários presentes
         const presentes = (rdo.maoDeObra || []).filter(func => func.status === 'presente').length;
 
-        // **NOVA ESTRUTURA** com 6 colunas
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        rdoDate.setHours(0, 0, 0, 0);
+        const isPastRdo = rdoDate < today;
+
+        // Atributos do botão Editar que mudam com base na data
+        const editButtonTitle = isPastRdo ? 'RDO consolidado, não pode ser editado' : 'Editar RDO';
+        const editButtonState = isPastRdo ? 'aria-disabled="true"' : '';
+        const editButtonHref = isPastRdo ? '#' : `rdo.html?id=${id}`;
+
         row.innerHTML = `
-            <div>${dataRelatorio}</div>
+            <div>${dataRelatorioFormatada}</div>
             <div>${empreendimento}</div>
             <div>${responsavel}</div>
             <div>${atividadesReportadas}</div>
             <div>${presentes}</div>
-            <div class="rdo-list-action">
+            <div class="rdo-list-action" style="display: flex; gap: 0.5rem;">
+                <a href="${editButtonHref}" 
+                   class="btn btn-primary-form btn-sm edit-rdo-btn" 
+                   title="${editButtonTitle}"
+                   ${editButtonState}>
+                    <i class="fas fa-pencil-alt"></i> Editar
+                </a>
                 <a href="ver-rdo.html?id=${id}" class="btn btn-secondary-form btn-sm" title="Visualizar RDO">
                     <i class="fas fa-eye"></i> Visualizar
                 </a>
