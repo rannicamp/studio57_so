@@ -19,8 +19,10 @@ function displayEmployees(employees, db, storage) {
     container.innerHTML = '';
 
     if (employees.length === 0) {
-        loadingMessage.textContent = 'Nenhum funcionário encontrado.';
-        loadingMessage.style.display = 'block'; // Garante que a mensagem seja visível
+        if(loadingMessage) {
+            loadingMessage.textContent = 'Nenhum funcionário encontrado.';
+            loadingMessage.style.display = 'block';
+        }
     } else if (loadingMessage) {
         loadingMessage.style.display = 'none';
     }
@@ -28,8 +30,7 @@ function displayEmployees(employees, db, storage) {
     employees.forEach(employee => {
         const card = document.createElement('div');
         card.className = 'employee-card';
-        // As URLs dos arquivos vêm de campos como 'fotoFuncionarioUrl', etc.
-        const fotoUrl = employee.fotoFuncionarioUrl || employee.fotoUrl; // Compatibilidade com nomes antigos
+        const fotoUrl = employee.fotoFuncionarioUrl || employee.fotoUrl;
         const dataAdmissao = employee.dataAdmissao ? new Date(employee.dataAdmissao.seconds * 1000).toLocaleDateString('pt-BR') : '--';
 
         card.innerHTML = `
@@ -58,7 +59,6 @@ function displayEmployees(employees, db, storage) {
         container.appendChild(card);
     });
 
-    // Adiciona listener de exclusão
     container.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', async (e) => {
             const employeeId = e.currentTarget.dataset.id;
@@ -71,7 +71,9 @@ function displayEmployees(employees, db, storage) {
 }
 
 function filterEmployees() {
-    const searchTerm = document.getElementById('searchQuadroInput').value.toLowerCase();
+    const searchInput = document.getElementById('searchQuadroInput');
+    if (!searchInput) return;
+    const searchTerm = searchInput.value.toLowerCase();
     const filtered = allEmployeesData.filter(emp => {
         return (emp.nomeCompleto?.toLowerCase() || '').includes(searchTerm) ||
                (emp.cpf?.toLowerCase() || '').includes(searchTerm) ||
@@ -83,7 +85,6 @@ function filterEmployees() {
 async function loadAndDisplayFuncionarios(db, storage) {
     showLoading();
     try {
-        // CORREÇÃO: O nome da coleção estava "funcionarios" (plural), o correto é "funcionario" (singular)
         const funcionariosCollectionRef = collection(db, `artifacts/${APP_COLLECTION_ID}/funcionario`);
         const querySnapshot = await getDocs(funcionariosCollectionRef);
         allEmployeesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -104,24 +105,8 @@ async function deleteEmployee(employeeId, employeeCpf, db, storage) {
     }
     showLoading();
     try {
-        // CORREÇÃO: O nome da coleção também estava errado aqui
         const employeeDocRef = doc(db, `artifacts/${APP_COLLECTION_ID}/funcionario`, employeeId);
         await deleteDoc(employeeDocRef);
-
-        const filePrefixes = ['foto', 'contrato', 'identidade', 'aso'];
-        for (const prefix of filePrefixes) {
-             try {
-                // Deleta da pasta funcionarios_documentos, conforme salvo em funcionario.js
-                const storagePath = `funcionarios_documentos/${employeeCpf}/${prefix}`;
-                const fileRef = ref(storage, storagePath);
-                // NOTA: Esta parte é complexa pois não sabemos a extensão original.
-                // A exclusão de arquivos do Storage pode precisar de uma lógica mais robusta no futuro,
-                // como armazenar o caminho completo do arquivo no Firestore.
-                // Por enquanto, a exclusão do registro no banco de dados é o mais importante.
-             } catch(e) {
-                // Ignora erros de exclusão de arquivos por enquanto.
-             }
-        }
         showToast('success', 'Sucesso', 'Funcionário excluído com sucesso.');
         await loadAndDisplayFuncionarios(db, storage);
 
