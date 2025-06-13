@@ -1,11 +1,10 @@
-import { supabase } from './supabase-config.js';
+// A variável 'supabase' já foi criada e está acessível por causa do arquivo supabase-config.js
 
 // --- ELEMENTOS DO DOM ---
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 
 // --- LÓGICA DE LOGIN ---
-// Este bloco só executa se o formulário de login for encontrado na página
 if (loginForm) {
     const loginButton = document.getElementById('loginButton');
     const errorMessageDiv = document.getElementById('error-message');
@@ -40,7 +39,6 @@ if (loginForm) {
 }
 
 // --- LÓGICA DE CADASTRO ---
-// Este bloco só executa se o formulário de cadastro for encontrado na página
 if (registerForm) {
     const registerButton = document.getElementById('registerButton');
     const successMessageDiv = document.getElementById('success-message');
