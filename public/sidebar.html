@@ -1,37 +1,77 @@
-<div class="sidebar" id="sidebar">
-    <div class="logo-container">
-        <button id="sidebar-toggle-btn" style="position: absolute; left: 10px; top: 20px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--color-dark-gray);"><i class="fas fa-bars"></i></button>
-        <a href="dashboard.html">
-            <img src="https://studio57.arq.br/wp-content/uploads/2025/04/STUDIO-57-PRETO-RETANGULO.png" alt="Logo Studio 57">
-        </a>
+<nav id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <h2 class="sidebar-title">STUDIO 57</h2>
     </div>
-    <nav>
-        <ul>
-            <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i><span class="link-text">DASHBOARD</span></a></li>
-            
-            <li class="section-title-sidebar"><span>ADMINISTRATIVO</span></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-calendar-alt"></i><span class="link-text">Folha de Ponto</span></a></li>
-            <li><a href="quadro_de_funcionarios.html" class="nav-link"><i class="fas fa-users"></i><span class="link-text">Funcionários</span></a></li>
-            
-            <li class="section-title-sidebar"><span>OBRAS</span></li>
-            <li><a href="registro_empreendimento.html" class="nav-link"><i class="fas fa-building"></i><span class="link-text">Empreendimentos</span></a></li>
-            <li><a href="lista-rdo.html" class="nav-link"><i class="fas fa-book-open"></i><span class="link-text">Diário de Obras</span></a></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-file-invoice-dollar"></i><span class="link-text">Orçamentos</span></a></li>
-            <li><a href="gantt.html" class="nav-link"><i class="fas fa-tasks"></i><span class="link-text">Cronogramas</span></a></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-hard-hat"></i><span class="link-text">Materiais</span></a></li>
-
-            <li class="section-title-sidebar"><span>COMERCIAL</span></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-chart-line"></i><span class="link-text">Tabela de Vendas</span></a></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-calculator"></i><span class="link-text">Simulador</span></a></li>
-
-            <li class="section-title-sidebar"><span>FERRAMENTAS</span></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-project-diagram"></i><span class="link-text">Mapa Mental</span></a></li>
-        </ul>
-    </nav>
-    <div class="logout-link-container">
-         <button id="logout-button-sidebar" class="btn btn-outline-form" style="width: 100%;">
+    <ul class="sidebar-menu">
+        <li>
+            <a href="dashboard.html" class="sidebar-link">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <li class="sidebar-menu-item">
+            <a href="#" class="sidebar-link has-dropdown">
+                <i class="fas fa-building"></i>
+                <span>Empreendimentos</span>
+                <i class="fas fa-chevron-down dropdown-icon"></i>
+            </a>
+            <ul class="sidebar-submenu">
+                <li><a href="registro_empreendimento.html">Cadastrar Novo</a></li>
+                <li><a href="#">Visualizar Todos</a></li>
+            </ul>
+        </li>
+        <li class="sidebar-menu-item">
+            <a href="#" class="sidebar-link has-dropdown">
+                <i class="fas fa-users"></i>
+                <span>Funcionários</span>
+                <i class="fas fa-chevron-down dropdown-icon"></i>
+            </a>
+            <ul class="sidebar-submenu">
+                <li><a href="registro_funcionario.html">Cadastrar Novo</a></li>
+                <li><a href="quadro_de_funcionarios.html">Quadro de Funcionários</a></li>
+            </ul>
+        </li>
+        <li class="sidebar-menu-item">
+            <a href="#" class="sidebar-link has-dropdown">
+                <i class="fas fa-clipboard-list"></i>
+                <span>RDO</span>
+                <i class="fas fa-chevron-down dropdown-icon"></i>
+            </a>
+            <ul class="sidebar-submenu">
+                <li><a href="lista-rdo.html">Criar/Ver RDOs</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="gantt.html" class="sidebar-link">
+                <i class="fas fa-chart-gantt"></i>
+                <span>Cronograma (Gantt)</span>
+            </a>
+        </li>
+    </ul>
+    <div class="sidebar-footer">
+        <button id="logout-button-sidebar" class="sidebar-link logout-button">
             <i class="fas fa-sign-out-alt"></i>
-            <span class="link-text">Sair</span>
+            <span>Sair</span>
         </button>
     </div>
-</div>
+</nav>
+
+<script>
+    // Script para controlar os menus dropdown
+    document.querySelectorAll('.sidebar-link.has-dropdown').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const parentLi = this.parentElement;
+            
+            // Fecha outros submenus abertos
+            document.querySelectorAll('.sidebar-menu-item.open').forEach(openItem => {
+                if(openItem !== parentLi) {
+                    openItem.classList.remove('open');
+                }
+            });
+
+            // Abre ou fecha o submenu clicado
+            parentLi.classList.toggle('open');
+        });
+    });
+</script>

@@ -3,64 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro de Empreendimento - Studio 57</title>
+    <title>Registro de Empreendimento - Studio 57</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="page-wrapper">
         <div id="sidebar-placeholder"></div>
+
         <div class="main-content-area-wrapper">
             <header class="main-header">
-                <h1 id="page-title-header">Empreendimentos</h1>
+                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
+                <h1 id="page-title-header">Cadastro de Empreendimento</h1>
                 <div class="header-user-info">
                     <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
                     <div id="current-datetime">--/--/---- --:--:--</div>
                     <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </header>
+            
             <main class="content-scrollable">
                 <div class="toast-container" id="toastContainer"></div>
-                <div class="spinner-overlay" id="loadingSpinner"><div class="spinner"></div></div>
-
                 <div class="form-container">
-                    <div class="form-header">
-                        <h3 class="form-title" id="formSectionMainTitle">Novo Empreendimento</h3>
-                        <p class="form-subtitle">Preencha os dados detalhados do projeto.</p>
-                    </div>
-
-                    <div class="tabs">
-                        <div class="tab active" data-tab="geral">Info. Gerais</div>
-                        <div class="tab" data-tab="terreno">Dados do Terreno</div>
-                        <div class="tab" data-tab="responsaveis">Responsáveis</div>
-                        <div class="tab" data-tab="edificacao">Dados da Edificação</div>
-                        <div class="tab" data-tab="areas">Quadro de Áreas</div>
-                        <div class="tab" data-tab="aprovacao">Aprovação</div>
-                    </div>
-
                     <form id="empreendimentoForm" class="form-body">
-                        <!-- Seção: Informações Gerais do Projeto -->
-                        <section class="form-section active" data-tab-content="geral">
-                            <div class="form-group">
-                                <label for="nomeEmpreendimento" class="form-label">Nome do Empreendimento *</label>
-                                <input type="text" id="nomeEmpreendimento" class="form-control" placeholder="Ex: Residencial Alfa" required>
+                        <div class="form-section">
+                            <h3 class="form-section-title">1. Identificação do Empreendimento</h3>
+                            <div class="form-grid-1-col">
+                                <div class="form-group">
+                                    <label for="nomeEmpreendimento" class="form-label">Nome do Empreendimento</label>
+                                    <input type="text" id="nomeEmpreendimento" class="form-control" required>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="usoImovel" class="form-label">Uso do Imóvel</label>
-                                <input type="text" id="usoImovel" class="form-control" placeholder="Ex: Residencial Multifamiliar">
-                            </div>
-                            <div class="form-group">
-                                <label for="descricaoProjeto" class="form-label">Descrição do Projeto</label>
-                                <textarea id="descricaoProjeto" class="form-control" rows="4"></textarea>
-                            </div>
-                        </section>
-
-                        <!-- Seção: Dados do Terreno (ATUALIZADA) -->
-                        <section class="form-section" data-tab-content="terreno">
                             <div class="form-grid-2-col">
                                 <div class="form-group">
+                                    <label for="usoImovel" class="form-label">Uso do Imóvel</label>
+                                    <input type="text" id="usoImovel" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="descricaoProjeto" class="form-label">Descrição Sintética do Projeto</label>
+                                    <input type="text" id="descricaoProjeto" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="form-section-title">2. Endereço do Imóvel</h3>
+                            <div class="form-grid-3-col">
+                                <div class="form-group">
                                     <label for="cep" class="form-label">CEP</label>
-                                    <input type="text" id="cep" class="form-control" placeholder="00000-000" maxlength="9">
+                                    <input type="text" id="cep" class="form-control">
                                 </div>
                                 <div class="form-group">
                                     <label for="logradouro" class="form-label">Logradouro</label>
@@ -70,6 +62,8 @@
                                     <label for="numero" class="form-label">Número</label>
                                     <input type="text" id="numero" class="form-control">
                                 </div>
+                            </div>
+                            <div class="form-grid-3-col">
                                 <div class="form-group">
                                     <label for="bairro" class="form-label">Bairro</label>
                                     <input type="text" id="bairro" class="form-control">
@@ -82,7 +76,8 @@
                                     <label for="estado" class="form-label">Estado</label>
                                     <input type="text" id="estado" class="form-control">
                                 </div>
-                                <hr style="grid-column: 1 / -1; border-top: 1px solid var(--color-light-gray); margin: 1rem 0;">
+                            </div>
+                            <div class="form-grid-4-col">
                                 <div class="form-group">
                                     <label for="lote" class="form-label">Lote</label>
                                     <input type="text" id="lote" class="form-control">
@@ -92,11 +87,6 @@
                                     <input type="text" id="quadra" class="form-control">
                                 </div>
                                 <div class="form-group">
-                                    <label for="areaTerreno" class="form-label">Área do Terreno (m²)</label>
-                                    <input type="number" id="areaTerreno" class="form-control" step="0.01">
-                                </div>
-                                <hr style="grid-column: 1 / -1; border-top: 1px solid var(--color-light-gray); margin: 1rem 0;">
-                                <div class="form-group">
                                     <label for="zona" class="form-label">Zona</label>
                                     <input type="text" id="zona" class="form-control">
                                 </div>
@@ -105,108 +95,135 @@
                                     <input type="text" id="via" class="form-control">
                                 </div>
                             </div>
-                        </section>
+                        </div>
 
-                        <!-- Seção: Responsáveis -->
-                        <section class="form-section" data-tab-content="responsaveis">
+                        <div class="form-section">
+                            <h3 class="form-section-title">3. Informações Adicionais</h3>
                             <div class="form-grid-2-col">
-                                <div class="form-group"><label for="proprietarioNome" class="form-label">Proprietário (Nome/Razão Social)</label><input type="text" id="proprietarioNome" class="form-control"></div>
-                                <div class="form-group"><label for="proprietarioCpfCnpj" class="form-label">CPF/CNPJ do Proprietário</label><input type="text" id="proprietarioCpfCnpj" class="form-control"></div>
-                                <div class="form-group"><label for="responsavelTecnicoNome" class="form-label">Responsável Técnico</label><input type="text" id="responsavelTecnicoNome" class="form-control"></div>
-                                <div class="form-group"><label for="cauCrea" class="form-label">CAU/CREA</label><input type="text" id="cauCrea" class="form-control"></div>
+                                <div class="form-group">
+                                    <label for="areaTerreno" class="form-label">Área do Terreno (m²)</label>
+                                    <input type="number" id="areaTerreno" class="form-control" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label for="proprietarioNome" class="form-label">Nome do Proprietário</label>
+                                    <input type="text" id="proprietarioNome" class="form-control">
+                                </div>
                             </div>
-                        </section>
-
-                        <!-- Seção: Dados da Edificação -->
-                        <section class="form-section" data-tab-content="edificacao">
-                            <div class="form-grid-2-col">
-                                <div class="form-group"><label for="numPavimentos" class="form-label">Nº de Pavimentos</label><input type="number" id="numPavimentos" class="form-control" min="0"></div>
-                                <div class="form-group"><label for="coefAproveitamento" class="form-label">Coef. de Aproveitamento</label><input type="number" id="coefAproveitamento" class="form-control" step="0.01"></div>
-                                <div class="form-group"><label for="taxaPermeabilidade" class="form-label">Taxa de Permeabilidade (%)</label><input type="number" id="taxaPermeabilidade" class="form-control" min="0" max="100"></div>
-                                <div class="form-group"><label for="unidadesResidenciais" class="form-label">Unidades Residenciais</label><input type="number" id="unidadesResidenciais" class="form-control" min="0"></div>
-                                <div class="form-group"><label for="unidadesNaoResidenciais" class="form-label">Unidades Não Residenciais</label><input type="number" id="unidadesNaoResidenciais" class="form-control" min="0"></div>
-                                <div class="form-group"><label for="vagasEstacionamento" class="form-label">Vagas de Estacionamento</label><input type="number" id="vagasEstacionamento" class="form-control" min="0"></div>
+                             <div class="form-grid-2-col">
+                                <div class="form-group">
+                                    <label for="proprietarioCpfCnpj" class="form-label">CPF/CNPJ do Proprietário</label>
+                                    <input type="text" id="proprietarioCpfCnpj" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="responsavelTecnicoNome" class="form-label">Responsável Técnico</label>
+                                    <input type="text" id="responsavelTecnicoNome" class="form-control">
+                                </div>
                             </div>
-                             <div class="form-group">
-                                <label for="observacoesEdificacao" class="form-label">Observações</label>
-                                <textarea id="observacoesEdificacao" class="form-control" rows="3"></textarea>
+                            <div class="form-group">
+                                <label for="cauCrea" class="form-label">CAU/CREA</label>
+                                <input type="text" id="cauCrea" class="form-control">
                             </div>
-                        </section>
+                        </div>
                         
-                        <!-- Seção: Quadro de Áreas (m²) (NOVA ESTRUTURA) -->
-                        <section class="form-section" data-tab-content="areas">
-                            <div class="area-table-container">
-                                <div class="area-table-header">
-                                    <div class="area-table-header-cell">Pavimento</div>
-                                    <div class="area-table-header-cell">Área (m²)</div>
-                                    <div class="area-table-header-cell">Ações</div>
-                                </div>
-                                <div id="area-table-body">
-                                    <!-- As linhas de pavimento serão adicionadas aqui pelo JS -->
-                                </div>
-                            </div>
-                            <button type="button" id="add-pavement-btn" class="btn btn-outline-form" style="margin-top: 1rem;">
-                                <i class="fas fa-plus"></i> Adicionar Pavimento
-                            </button>
-                        </section>
-
-                        <!-- Seção: Aprovação na Prefeitura -->
-                        <section class="form-section" data-tab-content="aprovacao">
-                            <div class="form-grid-2-col">
-                                <div class="form-group"><label for="statusAprovacao" class="form-label">Status</label><input type="text" id="statusAprovacao" class="form-control"></div>
-                                <div class="form-group"><label for="dataAprovacao" class="form-label">Data da Aprovação</label><input type="date" id="dataAprovacao" class="form-control"></div>
-                                <div class="form-group"><label for="numProcesso" class="form-label">Nº do Processo</label><input type="text" id="numProcesso" class="form-control"></div>
-                                <div class="form-group"><label for="responsavelAprovacao" class="form-label">Responsável pela Aprovação</label><input type="text" id="responsavelAprovacao" class="form-control"></div>
-                            </div>
-                        </section>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary-form">Salvar Empreendimento</button>
+                        </div>
                     </form>
-                    
-                    <div class="form-footer">
-                        <button type="button" class="btn btn-outline-form" id="cancelFormBtn">Limpar</button>
-                        <button type="submit" form="empreendimentoForm" class="btn btn-success-form" id="saveBtn">
-                            <i class="fas fa-save"></i>
-                            <span>Salvar Empreendimento</span>
-                        </button>
-                    </div>
+                </div>
+                 <div class="loading-overlay" id="loadingSpinner" style="display: none;">
+                    <div class="spinner"></div>
                 </div>
             </main>
         </div>
     </div>
-
+    
     <script type="module">
-        import { app } from './js/firebase-config.js';
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
-        import { initializeEmpreendimentoModule } from './js/empreendimento.js';
+        import { supabaseClient as supabase } from './js/supabase-config.js';
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
 
+        // --- INICIALIZAÇÃO DA PÁGINA ---
         async function initializePage() {
             await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-            
-            checkAuthAndRedirect(auth, 'index.html', (user) => {
+            checkAuthAndRedirect((user) => {
                 initializeCommonUI(user);
                 initializeSidebarToggle();
-                initializeEmpreendimentoModule(db); 
-            });
-            
-            // Lógica para controlar as abas
-            const tabs = document.querySelectorAll('.tab');
-            const sections = document.querySelectorAll('.form-section');
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    const tabTarget = tab.dataset.tab;
-                    sections.forEach(section => {
-                        section.classList.toggle('active', section.dataset.tabContent === tabTarget);
-                    });
-                });
             });
         }
-
         initializePage();
+
+        // --- LÓGICA DO FORMULÁRIO ---
+        const form = document.getElementById('empreendimentoForm');
+        const cepInput = document.getElementById('cep');
+
+        // Função para buscar endereço pelo CEP
+        cepInput.addEventListener('blur', async () => {
+            const cep = cepInput.value.replace(/\D/g, '');
+            if (cep.length !== 8) return;
+
+            showLoading();
+            try {
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                if (!response.ok) throw new Error('CEP não encontrado');
+                const data = await response.json();
+                if (data.erro) throw new Error('CEP inválido');
+                
+                document.getElementById('logradouro').value = data.logradouro;
+                document.getElementById('bairro').value = data.bairro;
+                document.getElementById('cidade').value = data.localidade;
+                document.getElementById('estado').value = data.uf;
+            } catch (error) {
+                console.error("Erro ao buscar CEP:", error);
+                showToast('error', 'Erro de CEP', error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Função para salvar o formulário
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            const empreendimentoData = {
+                nomeEmpreendimento: document.getElementById('nomeEmpreendimento').value,
+                usoImovel: document.getElementById('usoImovel').value,
+                descricaoProjeto: document.getElementById('descricaoProjeto').value,
+                cep: document.getElementById('cep').value,
+                logradouro: document.getElementById('logradouro').value,
+                numero: document.getElementById('numero').value,
+                bairro: document.getElementById('bairro').value,
+                cidade: document.getElementById('cidade').value,
+                estado: document.getElementById('estado').value,
+                lote: document.getElementById('lote').value,
+                quadra: document.getElementById('quadra').value,
+                zona: document.getElementById('zona').value,
+                via: document.getElementById('via').value,
+                areaTerreno: parseFloat(document.getElementById('areaTerreno').value) || null,
+                proprietarioNome: document.getElementById('proprietarioNome').value,
+                proprietarioCpfCnpj: document.getElementById('proprietarioCpfCnpj').value,
+                responsavelTecnicoNome: document.getElementById('responsavelTecnicoNome').value,
+                cauCrea: document.getElementById('cauCrea').value,
+                criadoEm: new Date().toISOString() // Data de criação
+            };
+
+            try {
+                const { data, error } = await supabase
+                    .from('empreendimentos')
+                    .insert([empreendimentoData]);
+
+                if (error) {
+                    throw error;
+                }
+
+                showToast('success', 'Sucesso!', 'Empreendimento cadastrado com sucesso.');
+                form.reset();
+            } catch (error) {
+                console.error("Erro ao salvar empreendimento:", error);
+                showToast('error', 'Erro ao Salvar', 'Não foi possível cadastrar o empreendimento.');
+            } finally {
+                hideLoading();
+            }
+        });
     </script>
 </body>
 </html>

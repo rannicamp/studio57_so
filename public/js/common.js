@@ -1,193 +1,168 @@
-// common.js (CORRIGIDO E COMPLETO)
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from './firebase-config.js';
+// public/js/common.js
 
-const auth = getAuth(app);
+import { supabaseClient as supabase } from './supabase-config.js';
 
 /**
- * Verifica o estado de autenticação do usuário e redireciona se não estiver logado.
+ * Carrega um componente HTML (como a sidebar) em um elemento da página.
+ * @param {string} elementId - O ID do elemento onde o HTML será inserido.
+ * @param {string} url - O caminho para o arquivo HTML a ser carregado.
  */
-export function checkAuthAndRedirect(auth, redirectUrl, callback = null) {
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            console.log("Usuário não logado, redirecionando para login...");
-            window.location.href = redirectUrl;
-        } else {
-            if (callback) {
-                callback(user);
-            }
-        }
-    });
-}
-
-/**
- * Lógica comum para o cabeçalho e a barra lateral (data/hora, info do usuário, logout, links ativos).
- */
-export function initializeCommonUI(user) {
-    const userInfoSpan = document.getElementById('user-info')?.querySelector('span');
-    const currentDatetimeSpan = document.getElementById('current-datetime');
-    // CORREÇÃO: Adicionado o seletor para o botão de logout da sidebar
-    const logoutButtonHeader = document.getElementById('logout-button-header');
-    const logoutButtonSidebar = document.getElementById('logout-button-sidebar'); 
-    const navLinks = document.querySelectorAll('.sidebar .nav-link');
-
-    if (userInfoSpan && user && user.email) {
-        userInfoSpan.textContent = user.email;
-    }
-
-    function updateDateTime() {
-        if (!currentDatetimeSpan) return;
-        const now = new Date();
-        const formattedDate = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-        const formattedTime = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-        currentDatetimeSpan.textContent = `${formattedDate} ${formattedTime}`;
-    }
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    const performLogout = async (event) => {
-        event.preventDefault();
-        try {
-            await signOut(auth);
-            console.log("Logout bem-sucedido.");
-            window.location.href = 'index.html'; // Redireciona para o login após o logout
-        } catch (error) {
-            console.error("Erro ao fazer logout:", error);
-        }
-    };
-
-    logoutButtonHeader?.addEventListener('click', performLogout);
-    logoutButtonSidebar?.addEventListener('click', performLogout);
-    
-    const currentPath = window.location.pathname.split('/').pop();
-    navLinks.forEach(link => {
-        const linkHref = link.getAttribute('href');
-        if (linkHref === currentPath) {
-            link.classList.add('active');
-        }
-    });
-}
-
-/**
- * Exibe um spinner de carregamento em tela cheia.
- */
-export function showLoading() {
-    const loadingSpinnerEl = document.getElementById('loadingSpinner');
-    if (loadingSpinnerEl) {
-        loadingSpinnerEl.style.display = 'flex';
-    }
-}
-
-/**
- * Oculta o spinner de carregamento em tela cheia.
- */
-export function hideLoading() {
-    const loadingSpinnerEl = document.getElementById('loadingSpinner');
-    if (loadingSpinnerEl) {
-        loadingSpinnerEl.style.display = 'none';
-    }
-}
-
-/**
- * Exibe uma mensagem de toast no canto da tela.
- */
-export function showToast(type, title, message) {
-    const toastContainerEl = document.getElementById('toastContainer');
-    if (!toastContainerEl) {
-        console.warn("Elemento 'toastContainer' não encontrado. Exibindo alerta padrão.");
-        alert(`${title}: ${message}`);
-        return;
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    
-    let iconClass = 'fas fa-info-circle';
-    if (type === 'success') iconClass = 'fas fa-check-circle';
-    if (type === 'error') iconClass = 'fas fa-exclamation-circle';
-    if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
-
-    toast.innerHTML = `
-        <div class="toast-icon"><i class="${iconClass}"></i></div>
-        <div class="toast-content">
-            <div class="toast-title">${title}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-        <button class="toast-close"><i class="fas fa-times"></i></button>
-    `;
-
-    toastContainerEl.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('show'));
-
-    const autoCloseTimeout = setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => { if (toast.parentNode === toastContainerEl) toastContainerEl.removeChild(toast); }, 300);
-    }, 5000);
-
-    toast.querySelector('.toast-close').addEventListener('click', () => {
-        clearTimeout(autoCloseTimeout);
-        toast.classList.remove('show');
-        setTimeout(() => { if (toast.parentNode === toastContainerEl) toastContainerEl.removeChild(toast); }, 300);
-    });
-}
-
-/**
- * Carrega um componente HTML de um arquivo e o injeta em um elemento da página.
- */
-export async function loadHTMLComponent(elementId, filePath) {
+export async function loadHTMLComponent(elementId, url) {
     try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            throw new Error(`Erro de rede ao carregar o componente: ${response.statusText}`);
-        }
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Não foi possível carregar ${url}`);
         const text = await response.text();
         const element = document.getElementById(elementId);
         if (element) {
             element.innerHTML = text;
-        } else {
-            console.error(`Placeholder com ID '${elementId}' não encontrado na página.`);
         }
     } catch (error) {
-        console.error(`Falha ao carregar o componente de '${filePath}':`, error);
+        console.error(`Erro ao carregar o componente ${url}:`, error);
     }
 }
 
 /**
- * Inicializa a funcionalidade de recolher/expandir a barra lateral.
+ * Verifica se o usuário está logado. Se não estiver, redireciona para a página de login.
+ * Se estiver logado e em uma página de autenticação (login/registro), redireciona para o dashboard.
+ * @param {function} onAuthenticated - Uma função para ser executada se o usuário estiver autenticado.
+ */
+export async function checkAuthAndRedirect(onAuthenticated) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    const isAuthPage = ['/index.html', '/register.html', '/forgot_password.html', '/', '/public/', '/public/index.html'].includes(window.location.pathname);
+
+    if (!user && !isAuthPage) {
+        window.location.href = '/index.html';
+    } else if (user && isAuthPage) {
+        window.location.href = '/dashboard.html';
+    } else if (user && typeof onAuthenticated === 'function') {
+        onAuthenticated(user);
+    } else if (!user && isAuthPage && typeof onAuthenticated === 'function') {
+        onAuthenticated(null); // Permite executar algo nas páginas de auth, se necessário
+    }
+}
+
+
+/**
+ * Realiza o logout do usuário e o redireciona para a página de login.
+ */
+async function handleLogout() {
+    showLoading();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        console.error('Erro ao fazer logout:', error);
+        showToast('error', 'Erro', 'Não foi possível sair. Tente novamente.');
+    } else {
+        window.location.href = 'index.html';
+    }
+    hideLoading();
+}
+
+/**
+ * Inicializa a interface comum do usuário (informações do header, botões de logout).
+ * @param {object} user - O objeto do usuário autenticado do Supabase.
+ */
+export function initializeCommonUI(user) {
+    if (!user) return;
+
+    const userInfoDiv = document.getElementById('user-info');
+    const currentDatetimeDiv = document.getElementById('current-datetime');
+    
+    if (userInfoDiv) {
+        userInfoDiv.innerHTML = `Usuário: <span class="font-semibold">${user.email}</span>`;
+    }
+
+    if (currentDatetimeDiv) {
+        setInterval(() => {
+            currentDatetimeDiv.textContent = new Date().toLocaleString('pt-BR');
+        }, 1000);
+    }
+
+    // Adiciona o evento de clique aos botões de logout
+    document.querySelectorAll('#logout-button-header, #logout-button-sidebar').forEach(btn => {
+        if(btn) {
+            // Remove qualquer evento antigo para evitar duplicação
+            btn.replaceWith(btn.cloneNode(true));
+        }
+    });
+     document.querySelectorAll('#logout-button-header, #logout-button-sidebar').forEach(btn => {
+        if(btn) btn.addEventListener('click', handleLogout);
+    });
+}
+
+/**
+ * Controla a funcionalidade de recolher/expandir a barra lateral.
  */
 export function initializeSidebarToggle() {
-    setTimeout(() => {
-        // CORREÇÃO: Alterado para os IDs corretos de sidebar.html
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('sidebar-toggle-btn');
-        
-        if (!sidebar || !toggleBtn) {
-            console.warn("Elementos da sidebar não encontrados para inicializar o toggle.");
-            return;
-        }
+    const sidebar = document.getElementById('sidebar-placeholder');
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    const mainContent = document.querySelector('.main-content-area-wrapper');
 
-        const mainContent = document.querySelector('.main-content-area-wrapper');
+    if (sidebar && toggleBtn && mainContent) {
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('collapsed');
+        });
+    }
+}
 
-        const updateToggleState = (isCollapsed) => {
-            document.body.classList.toggle('sidebar-collapsed', isCollapsed);
-            sidebar.classList.toggle('collapsed', isCollapsed);
-            if (mainContent) {
-                 mainContent.style.marginLeft = isCollapsed ? '72px' : '250px';
-            }
-        };
+// --- Funções Utilitárias de UI (centralizadas aqui) ---
 
-        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        updateToggleState(isCollapsed);
+/** Mostra o ícone de carregamento (spinner) */
+export function showLoading() {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) spinner.style.display = 'flex';
+}
 
-        toggleBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const currentlyCollapsed = sidebar.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
-            document.body.classList.toggle('sidebar-collapsed', currentlyCollapsed);
-            if (mainContent) {
-                mainContent.style.marginLeft = currentlyCollapsed ? '72px' : '250px';
+/** Esconde o ícone de carregamento (spinner) */
+export function hideLoading() {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) spinner.style.display = 'none';
+}
+
+/**
+ * Mostra uma notificação (toast) na tela.
+ * @param {'success'|'error'|'info'|'warning'} type - O tipo de notificação.
+ * @param {string} title - O título da notificação.
+ * @param {string} message - A mensagem da notificação.
+ */
+export function showToast(type, title, message) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        info: 'fa-info-circle',
+        warning: 'fa-exclamation-triangle'
+    };
+
+    toast.innerHTML = `
+        <div class="toast-icon"><i class="fas ${icons[type]}"></i></div>
+        <div class="toast-content">
+            <p class="toast-title">${title}</p>
+            <p class="toast-message">${message}</p>
+        </div>
+        <button class="toast-close">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 100);
+
+    const closeBtn = toast.querySelector('.toast-close');
+    const removeToast = () => {
+        toast.classList.remove('show');
+        toast.addEventListener('transitionend', () => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
             }
         });
-
-    }, 200);
+    };
+    
+    closeBtn.addEventListener('click', removeToast);
+    setTimeout(removeToast, 5000);
 }
