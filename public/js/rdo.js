@@ -1,270 +1,202 @@
-// public/js/rdo.js
-
-import { collection, addDoc, getDocs, getDoc, query, where, doc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+// public/js/ver-rdo.js (VERSÃO COM CORREÇÃO DA LIGHTBOX E OBSERVAÇÕES)
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { APP_COLLECTION_ID } from './firebase-config.js';
 import { showLoading, hideLoading, showToast } from './common.js';
 
-export function initializeRdoModule(db, storage, user) {
-    const rdoForm = document.getElementById('rdoForm');
-    if (!rdoForm) return;
+export function initializeVerRdoModule(db) {
+    const detailsContainer = document.getElementById('rdo-details-container').querySelector('.form-body');
 
-    // Elementos do DOM
-    const selectEmpreendimento = document.getElementById('select-empreendimento-rdo');
-    const dataRelatorioInput = document.getElementById('dataRelatorio');
-    const maoDeObraContainer = document.getElementById('maoDeObraContainer');
-    const atividadesContainer = document.getElementById('atividadesContainer');
-    const photoUploadContainer = document.getElementById('dynamic-photo-upload-container');
+    // ===== LÓGICA DA LIGHTBOX =====
+    const lightbox = {
+        overlay: document.getElementById('lightbox-overlay'),
+        image: document.querySelector('.lightbox-image'),
+        caption: document.querySelector('.lightbox-caption'),
+        closeBtn: document.querySelector('.lightbox-close'),
+        prevBtn: document.querySelector('.lightbox-prev'),
+        nextBtn: document.querySelector('.lightbox-next'),
+        photos: [],
+        currentIndex: 0,
+        isOpen: false,
 
-    let photoEntries = 0;
-
-    // --- CARREGAMENTO DE DADOS INICIAIS ---
-    async function loadEmpreendimentos() {
-        try {
-            const q = query(collection(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`), orderBy("nomeEmpreendimento"));
-            const snapshot = await getDocs(q);
-            selectEmpreendimento.innerHTML = '<option value="">Selecione um Empreendimento</option>';
-            snapshot.forEach(doc => {
-                selectEmpreendimento.add(new Option(doc.data().nomeEmpreendimento, doc.id));
-            });
-
-            // Seleciona empreendimento se vier pela URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const empreendimentoId = urlParams.get('empreendimentoId');
-            if (empreendimentoId) {
-                selectEmpreendimento.value = empreendimentoId;
-                selectEmpreendimento.dispatchEvent(new Event('change'));
+        open(clickedIndex) {
+            this.currentIndex = clickedIndex;
+            this.update();
+            this.overlay.style.display = 'flex';
+            setTimeout(() => {
+                this.overlay.classList.add('show');
+            }, 10);
+            document.body.style.overflow = 'hidden';
+            this.isOpen = true;
+        },
+        close() {
+            this.overlay.classList.remove('show');
+            setTimeout(() => {
+                this.overlay.style.display = 'none';
+            }, 300);
+            document.body.style.overflow = 'auto';
+            this.isOpen = false;
+        },
+        next() {
+            if (this.currentIndex < this.photos.length - 1) {
+                this.currentIndex++;
+                this.update();
             }
+        },
+        prev() {
+            if (this.currentIndex > 0) {
+                this.currentIndex--;
+                this.update();
+            }
+        },
+        update() {
+            if (this.photos.length === 0) return;
+            const photo = this.photos[this.currentIndex];
+            this.image.src = photo.url;
+            this.image.alt = photo.description;
+            this.caption.textContent = photo.description;
 
-        } catch (error) {
-            showToast('error', 'Erro', 'Falha ao carregar empreendimentos.');
-            console.error("Erro ao carregar empreendimentos:", error);
-        }
-    }
-
-    async function onEmpreendimentoChange() {
-        const empreendimentoId = selectEmpreendimento.value;
-        if (!empreendimentoId) {
-            maoDeObraContainer.innerHTML = '';
-            atividadesContainer.innerHTML = '';
-            return;
-        }
-        showLoading();
-        await loadMaoDeObra(empreendimentoId);
-        await loadAtividades(empreendimentoId);
-        hideLoading();
-    }
-
-    async function loadMaoDeObra(empreendimentoId) {
-        try {
-            const q = query(collection(db, `artifacts/${APP_COLLECTION_ID}/funcionario`), where("empreendimentoId", "==", empreendimentoId), orderBy("nomeCompleto"));
-            const snapshot = await getDocs(q);
-            maoDeObraContainer.innerHTML = '';
-            snapshot.forEach(doc => {
-                const funcionario = { id: doc.id, ...doc.data() };
-                const row = createMaoDeObraRow(funcionario);
-                maoDeObraContainer.appendChild(row);
+            this.prevBtn.style.display = this.currentIndex > 0 ? 'block' : 'none';
+            this.nextBtn.style.display = this.currentIndex < this.photos.length - 1 ? 'block' : 'none';
+        },
+        setPhotos(photos) {
+            this.photos = photos;
+        },
+        initListeners(container) {
+            this.closeBtn.addEventListener('click', () => this.close());
+            this.overlay.addEventListener('click', (e) => {
+                if (e.target === this.overlay) this.close();
             });
-        } catch (error) {
-            showToast('error', 'Erro', 'Falha ao carregar mão de obra.');
-            console.error("Erro ao carregar mão de obra:", error);
+            this.nextBtn.addEventListener('click', () => this.next());
+            this.prevBtn.addEventListener('click', () => this.prev());
+
+            document.addEventListener('keydown', (e) => {
+                if (!this.isOpen) return;
+                if (e.key === 'Escape') this.close();
+                if (e.key === 'ArrowRight') this.next();
+                if (e.key === 'ArrowLeft') this.prev();
+            });
+
+            container.addEventListener('click', (e) => {
+                const photoCard = e.target.closest('.photo-card');
+                if (photoCard) {
+                    const allCards = Array.from(container.querySelectorAll('.photo-card'));
+                    const clickedIndex = allCards.indexOf(photoCard);
+                    this.open(clickedIndex);
+                }
+            });
         }
-    }
+    };
+    // =============================
+
+    const getRdoIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
+
+    const formatDate = (timestamp) => {
+        if (!timestamp || !timestamp.toDate) return 'N/A';
+        return timestamp.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+
+    const createSectionTitle = (title) => `<h4 class="form-section-title">${title}</h4>`;
+
+    const createInfoGrid = (data) => `
+        <div class="form-grid-2-col">
+            <div class="form-group"><label class="form-label">Empreendimento</label><p>${data.empreendimentoNome || 'Não informado'}</p></div>
+            <div class="form-group"><label class="form-label">Data do Relatório</label><p>${formatDate(data.dataRelatorio)}</p></div>
+            <div class="form-group"><label class="form-label">Responsável</label><p>${data.responsavelRdo?.nome || 'Não informado'}</p></div>
+            <div class="form-group"><label class="form-label">Condições de Trabalho</label><p class="capitalize">${data.condicoesTrabalho?.join(', ') || 'Não informado'}</p></div>
+        </div>
+        <div class="form-group"><label class="form-label">Condições Climáticas</label><div class="badge-group">${(data.condicoesClimaticas || []).map(c => `<span class="badge weather-badge">${c}</span>`).join(' ') || 'Nenhuma'}</div></div>
+        <hr class="form-divider">
+    `;
+
+    const createTeamList = (team) => `
+        ${createSectionTitle('Lista de Chamada')}
+        <div class="rdo-view-list">
+            ${(team || []).length > 0 ? team.map(person => `<div class="rdo-list-row"><span class="item-name"><i class="fas fa-user fa-fw"></i> ${person.nome}</span><span class="badge status-${person.status}">${person.status}</span></div>`).join('') : '<p>Nenhum funcionário registrado.</p>'}
+        </div>
+        <hr class="form-divider">
+    `;
     
-    async function loadAtividades(empreendimentoId) {
-        try {
-            const empreendimentoDoc = await getDoc(doc(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`, empreendimentoId));
-            if (empreendimentoDoc.exists()) {
-                const atividades = empreendimentoDoc.data().areas || [];
-                atividadesContainer.innerHTML = '';
-                atividades.forEach(atividade => {
-                    const row = createAtividadeRow(atividade);
-                    atividadesContainer.appendChild(row);
-                });
-            }
-        } catch (error) {
-            showToast('error', 'Erro', 'Falha ao carregar atividades do cronograma.');
-            console.error("Erro ao carregar atividades:", error);
-        }
-    }
+    const createActivityList = (activities) => `
+        ${createSectionTitle('Status das Atividades do Cronograma')}
+        <div class="rdo-view-list">
+             ${(activities || []).length > 0 ? activities.map(activity => `<div class="rdo-list-row"><span class="item-name"><i class="fas fa-tasks fa-fw"></i> ${activity.nome}</span><span class="badge status-${activity.status.replace(/\s+/g, '-')}">${activity.status}</span></div>`).join('') : '<p>Nenhuma atividade registrada.</p>'}
+        </div>
+        <hr class="form-divider">
+    `;
 
-    // --- CRIAÇÃO DE ELEMENTOS DINÂMICOS ---
-    function createMaoDeObraRow(funcionario) {
-        const div = document.createElement('div');
-        div.className = 'rdo-list-row';
-        div.dataset.id = funcionario.id;
-        div.innerHTML = `
-            <span class="item-name"><i class="fas fa-user fa-fw"></i> ${funcionario.nomeCompleto}</span>
-            <div class="item-actions">
-                <button type="button" class="btn-attendance present" data-status="presente">Presente</button>
-                <button type="button" class="btn-attendance absent" data-status="falta">Falta</button>
-            </div>
-        `;
-        div.querySelectorAll('.btn-attendance').forEach(btn => {
-            btn.addEventListener('click', () => {
-                div.querySelectorAll('.btn-attendance').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                div.dataset.status = btn.dataset.status;
+    // *** FUNÇÃO CORRIGIDA PARA EXIBIR OCORRÊNCIAS ESTRUTURADAS ***
+    const createObservations = (ocorrencias) => {
+        let content = `${createSectionTitle('Ocorrências e Observações Gerais')}`;
+        if (!ocorrencias || ocorrencias.length === 0) {
+            content += '<div class="rdo-view-observations">Nenhuma ocorrência registrada.</div>';
+        } else {
+            content += '<div class="rdo-view-observations-list">';
+            ocorrencias.forEach(item => {
+                content += `
+                    <div class="observation-item severity-${item.severity || 'informativa'}">
+                        <strong class="observation-severity-tag">${item.severity || 'Informativa'}</strong>
+                        <p class="observation-text">${item.text}</p>
+                    </div>
+                `;
             });
-        });
-        return div;
-    }
-
-    function createAtividadeRow(atividade) {
-        const div = document.createElement('div');
-        div.className = 'rdo-list-row';
-        div.dataset.id = atividade.id;
-        div.innerHTML = `
-            <span class="item-name"><i class="fas fa-tasks fa-fw"></i> ${atividade.nome}</span>
-            <div class="item-actions">
-                <select class="status-select">
-                    <option value="não iniciado">Não Iniciado</option>
-                    <option value="em andamento">Em Andamento</option>
-                    <option value="concluído">Concluído</option>
-                    <option value="paralisado">Paralisado</option>
-                </select>
-            </div>
-        `;
-        return div;
-    }
-
-    function addPhotoEntry() {
-        photoEntries++;
-        const id = photoEntries;
-        const div = document.createElement('div');
-        div.className = 'photo-upload-entry';
-        div.id = `photo-entry-${id}`;
-        div.innerHTML = `
-            <label for="photo-file-${id}" class="photo-upload-preview" id="photo-preview-${id}"></label>
-            <input type="file" id="photo-file-${id}" class="hidden" accept="image/*" data-entry-id="${id}">
-            <div class="photo-upload-details">
-                <label for="photo-desc-${id}" class="form-label" style="margin-bottom: 0.25rem;">Descrição da Foto</label>
-                <input type="text" id="photo-desc-${id}" class="form-control" placeholder="Ex: Início da concretagem da laje">
-            </div>
-            <button type="button" class="btn btn-danger-form btn-sm remove-photo-btn" data-entry-id="${id}"><i class="fas fa-trash-alt"></i></button>
-        `;
-        photoUploadContainer.appendChild(div);
-
-        document.getElementById(`photo-file-${id}`).addEventListener('change', handlePhotoPreview);
-        div.querySelector('.remove-photo-btn').addEventListener('click', () => div.remove());
-    }
-
-    function handlePhotoPreview(event) {
-        const input = event.target;
-        const entryId = input.dataset.entryId;
-        const preview = document.getElementById(`photo-preview-${entryId}`);
-        const file = input.files[0];
-        if (file && preview) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                preview.style.backgroundImage = `url('${e.target.result}')`;
-            };
-            reader.readAsDataURL(file);
+            content += '</div>';
         }
-    }
+        content += '<hr class="form-divider">';
+        return content;
+    };
 
-    // --- SUBMISSÃO DO FORMULÁRIO ---
-    async function onFormSubmit(e) {
-        e.preventDefault();
-        showLoading();
 
-        const empreendimentoId = selectEmpreendimento.value;
-        const dataRelatorio = dataRelatorioInput.value;
-        if (!empreendimentoId || !dataRelatorio) {
-            showToast('error', 'Campos Obrigatórios', 'Selecione um empreendimento e a data do relatório.');
-            hideLoading();
+    const createPhotoGallery = (photos, rdoDate) => {
+        if (!photos || photos.length === 0) return '';
+        lightbox.setPhotos(photos); // Armazena as fotos para a lightbox usar
+        return `
+            ${createSectionTitle('Relatório Fotográfico')}
+            <div class="photo-gallery">
+                ${photos.map(photo => `
+                    <div class="photo-card" role="button" tabindex="0" aria-label="Ampliar imagem: ${photo.description || 'Sem descrição'}">
+                        <div class="photo-img-container" style="background-image: url('${photo.url}')"></div>
+                        <div class="photo-card-body">
+                            <p class="photo-description">${photo.description || 'Sem descrição.'}</p>
+                            <p class="photo-date"><i class="fas fa-calendar-alt fa-fw"></i> ${rdoDate}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    };
+
+    const loadRdoData = async () => {
+        const rdoId = getRdoIdFromUrl();
+        if (!rdoId) {
+            detailsContainer.innerHTML = '<p class="error-message">ID do RDO não fornecido na URL.</p>';
             return;
         }
-
+        showLoading();
         try {
-            // Coleta de dados
-            const maoDeObra = getMaoDeObraData();
-            const statusAtividades = getAtividadesData();
-            const fotos = await uploadPhotos(empreendimentoId, dataRelatorio);
+            const rdoRef = doc(db, `artifacts/${APP_COLLECTION_ID}/rdo`, rdoId);
+            const rdoSnap = await getDoc(rdoRef);
+            if (rdoSnap.exists()) {
+                const data = rdoSnap.data();
+                let content = '';
+                content += createInfoGrid(data);
+                content += createTeamList(data.maoDeObra);
+                content += createActivityList(data.statusAtividades);
+                content += createObservations(data.ocorrencias); // Chama a função corrigida
+                content += createPhotoGallery(data.fotos, formatDate(data.dataRelatorio));
+                detailsContainer.innerHTML = content;
 
-            // Monta o objeto RDO
-            const rdoData = {
-                empreendimentoId,
-                empreendimentoNome: selectEmpreendimento.options[selectEmpreendimento.selectedIndex].text,
-                dataRelatorio: Timestamp.fromDate(new Date(dataRelatorio + 'T12:00:00')), // Salva com meio-dia para evitar problemas de fuso
-                condicoesClimaticas: Array.from(document.querySelectorAll('input[name="cond-clima"]:checked')).map(el => el.value),
-                condicoesTrabalho: Array.from(document.querySelectorAll('input[name="cond-trabalho"]:checked')).map(el => el.value),
-                maoDeObra,
-                statusAtividades,
-                fotos,
-                observacoes: document.getElementById('observacoesRdo').value,
-                responsavelRdo: { id: user.uid, email: user.email, nome: user.displayName || user.email },
-                createdAt: serverTimestamp()
-            };
-            
-            // Salva no Firestore
-            await addDoc(collection(db, `artifacts/${APP_COLLECTION_ID}/rdo`), rdoData);
-
-            showToast('success', 'Sucesso!', 'Relatório Diário de Obra salvo com sucesso.');
-            rdoForm.reset();
-            maoDeObraContainer.innerHTML = '';
-            atividadesContainer.innerHTML = '';
-            photoUploadContainer.innerHTML = '';
-            photoEntries = 0;
-            addPhotoEntry();
-
+                lightbox.initListeners(detailsContainer);
+            } else {
+                showToast('error', 'Erro', 'RDO não encontrado.');
+                detailsContainer.innerHTML = '<p class="error-message">O RDO solicitado não foi encontrado.</p>';
+            }
         } catch (error) {
-            showToast('error', 'Erro Crítico', 'Não foi possível salvar o RDO.');
-            console.error("Erro ao salvar RDO:", error);
+            console.error("Erro ao carregar dados do RDO:", error);
+            showToast('error', 'Erro de Rede', 'Não foi possível carregar os dados.');
+            detailsContainer.innerHTML = '<p class="error-message">Ocorreu um erro ao carregar as informações.</p>';
         } finally {
             hideLoading();
         }
-    }
-
-    function getMaoDeObraData() {
-        return Array.from(maoDeObraContainer.querySelectorAll('.rdo-list-row')).map(row => ({
-            id: row.dataset.id,
-            nome: row.querySelector('.item-name').textContent.trim(),
-            status: row.dataset.status || 'falta'
-        }));
-    }
-
-    function getAtividadesData() {
-        return Array.from(atividadesContainer.querySelectorAll('.rdo-list-row')).map(row => ({
-            id: row.dataset.id,
-            nome: row.querySelector('.item-name').textContent.trim(),
-            status: row.querySelector('.status-select').value
-        }));
-    }
-
-    async function uploadPhotos(empreendimentoId, data) {
-        const uploadedPhotos = [];
-        const photoInputs = document.querySelectorAll('.photo-upload-entry input[type="file"]');
-        for (const input of photoInputs) {
-            if (input.files.length > 0) {
-                const file = input.files[0];
-                const entryId = input.dataset.entryId;
-                const description = document.getElementById(`photo-desc-${entryId}`).value;
-                const filePath = `rdo_fotos/${empreendimentoId}/${data}_${Date.now()}_${file.name}`;
-                const storageRef = ref(storage, filePath);
-                
-                const uploadTask = await uploadBytesResumable(storageRef, file);
-                const downloadURL = await getDownloadURL(uploadTask.ref);
-                
-                uploadedPhotos.push({
-                    url: downloadURL,
-                    path: filePath,
-                    description: description,
-                    timestamp: serverTimestamp()
-                });
-            }
-        }
-        return uploadedPhotos;
-    }
-
-    // --- INICIALIZAÇÃO ---
-    selectEmpreendimento.addEventListener('change', onEmpreendimentoChange);
-    document.getElementById('add-photo-btn').addEventListener('click', addPhotoEntry);
-    rdoForm.addEventListener('submit', onFormSubmit);
-    
-    // Configura data padrão para hoje
-    dataRelatorioInput.value = new Date().toISOString().split('T')[0];
-    
-    loadEmpreendimentos();
-    addPhotoEntry(); // Adiciona a primeira entrada de foto
+    };
+    loadRdoData();
 }

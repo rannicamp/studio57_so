@@ -105,7 +105,7 @@
         import { app, APP_COLLECTION_ID } from './js/firebase-config.js';
         import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp, orderBy, Timestamp, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
         import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
 
         async function initializePage() {
@@ -177,19 +177,28 @@
                     } catch (error) { console.error("Erro ao carregar mão de obra:", error); }
                 }
 
+                // *** FUNÇÃO CORRIGIDA ***
                 async function loadAtividades(empreendimentoId) {
                     try {
+                        // 1. A consulta foi simplificada para não usar 'orderBy', evitando o erro de índice.
                         const q = query(collection(db, `artifacts/${APP_COLLECTION_ID}/atividades`), where("empreendimentoId", "==", empreendimentoId));
                         const snapshot = await getDocs(q);
+                        
                         atividadesContainer.innerHTML = '';
                         if (snapshot.empty) {
                             atividadesContainer.innerHTML = '<p class="list-message">Nenhuma atividade cadastrada.</p>';
                             return;
                         }
                         const atividades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        atividades.sort((a, b) => a.nome.localeCompare(b.nome));
+
+                        // 2. A organização (sort) agora é feita aqui no navegador, depois de receber os dados.
+                        atividades.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+
                         atividades.forEach(atividade => atividadesContainer.appendChild(createAtividadeRow(atividade)));
-                    } catch (error) { console.error("Erro ao carregar atividades:", error); }
+                    } catch (error) { 
+                        showToast('error', 'Erro ao Carregar', 'Não foi possível carregar as atividades.');
+                        console.error("Erro ao carregar atividades:", error); 
+                    }
                 }
 
                 // --- CRIAÇÃO DE LINHAS DINÂMICAS ---
@@ -303,23 +312,37 @@
                     observationsContainer.querySelectorAll('.observation-row').forEach(row => {
                         const severity = row.querySelector('.observation-severity').value;
                         const text = row.querySelector('.observation-text').value;
-                        if (text) { data.push({ severity, text, timestamp: serverTimestamp() }); }
+                        if (text) { data.push({ severity, text, timestamp: Timestamp.now() }); }
                     });
                     return data;
                 }
 
                 async function uploadPhotos(empreendimentoId, data) {
                     const uploadedPhotos = [];
-                    for (const entry of photoUploadContainer.querySelectorAll('.photo-upload-entry')) {
+                    const photoEntries = photoUploadContainer.querySelectorAll('.photo-upload-entry');
+
+                    for (const entry of photoEntries) {
                         const fileInput = entry.querySelector('input[type="file"]');
-                        if (fileInput.files.length > 0) {
+                        if (fileInput && fileInput.files.length > 0) {
                             const file = fileInput.files[0];
-                            const description = entry.querySelector('.photo-upload-details input').value;
+                            const description = entry.querySelector('.photo-upload-details input').value || '';
                             const filePath = `rdo_fotos/${empreendimentoId}/${data}_${Date.now()}_${file.name}`;
                             const storageRef = ref(storage, filePath);
-                            const uploadTask = await uploadBytesResumable(storageRef, file);
-                            const downloadURL = await getDownloadURL(uploadTask.ref);
-                            uploadedPhotos.push({ url: downloadURL, path: filePath, description: description, timestamp: serverTimestamp() });
+                            
+                            try {
+                                const snapshot = await uploadBytes(storageRef, file);
+                                const downloadURL = await getDownloadURL(snapshot.ref);
+                                uploadedPhotos.push({ 
+                                    url: downloadURL, 
+                                    path: filePath, 
+                                    description: description, 
+                                    timestamp: serverTimestamp() 
+                                });
+                            } catch (uploadError) {
+                                console.error(`Falha no upload do arquivo: ${file.name}`, uploadError);
+                                showToast('error', 'Falha de Upload', `Não foi possível enviar a foto ${file.name}.`);
+                                throw uploadError;
+                            }
                         }
                     }
                     return uploadedPhotos;
