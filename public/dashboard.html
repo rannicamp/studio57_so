@@ -1,58 +1,65 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Studio 57</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
-    <div class="page-wrapper">
-        <div id="sidebar-placeholder"></div>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="https://via.placeholder.com/50" alt="Logo" class="sidebar-logo">
+                <h3>Studio 57</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html" class="active"><i class="material-icons">home</i> Início</a></li>
+                    <li><a href="registro_empreendimento.html"><i class="material-icons">business</i> Empreendimentos</a></li>
+                    <li><a href="registro_funcionario.html"><i class="material-icons">person_add</i> Cadastrar Funcionário</a></li>
+                    <li><a href="quadro_de_funcionarios.html"><i class="material-icons">group</i> Quadro de Funcionários</a></li>
+                    <li><a href="rdo.html"><i class="material-icons">assignment</i> Registrar RDO</a></li>
+                    <li><a href="lista-rdo.html"><i class="material-icons">list_alt</i> Lista de RDOs</a></li>
+                    <li><a href="gantt.html"><i class="material-icons">view_week</i> Cronograma (Gantt)</a></li>
+                    <li><a href="#" id="logoutButton"><i class="material-icons">logout</i> Sair</a></li>
+                </ul>
+            </nav>
+        </aside>
 
-        <div class="main-content-area-wrapper">
+        <main class="main-content">
             <header class="main-header">
-                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h1 id="page-title-header">Dashboard</h1>
-                <div class="header-user-info">
-                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
-                    <div id="current-datetime">--/--/---- --:--:--</div>
-                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+                <h1>Dashboard</h1>
+                <div class="user-info">
+                    <span>Olá, Usuário!</span>
+                    <i class="material-icons">account_circle</i>
                 </div>
             </header>
-            
-            <main class="content-scrollable">
-                <div class="toast-container" id="toastContainer"></div>
-                <h2>Bem-vindo ao Painel de Controle</h2>
-                <p>Selecione uma opção no menu ao lado para começar.</p>
 
-                 <div class="loading-overlay" id="loadingSpinner" style="display: none;">
-                    <div class="spinner"></div>
+            <section class="dashboard-widgets">
+                <div class="widget">
+                    <h3>Empreendimentos Ativos</h3>
+                    <p>5</p> </div>
+
+                <div class="widget">
+                    <h3>RDOs Pendentes</h3>
+                    <p>2</p> </div>
+
+                <div class="widget">
+                    <h3>Próximas Atividades</h3>
+                    <ul>
+                        <li><i class="material-icons">check_circle</i> Revisar RDO do dia 10/06</li>
+                        <li><i class="material-icons">check_circle</i> Reunião com cliente Alpha</li>
+                    </ul>
                 </div>
+            </section>
+
             </main>
-        </div>
     </div>
-    
-    <script type="module">
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
 
-        async function initializePage() {
-            // Primeiro, carrega a sidebar
-            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            
-            // Depois, verifica a autenticação do usuário
-            checkAuthAndRedirect((user) => {
-                // Se o usuário estiver autenticado, inicializa a UI comum
-                initializeCommonUI(user);
-                initializeSidebarToggle();
-            });
-        }
-
-        initializePage();
-    </script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/supabase-config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/main.js"></script> </body>
 </html>
