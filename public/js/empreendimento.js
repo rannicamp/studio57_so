@@ -1,7 +1,7 @@
 // public/js/empreendimento.js
 
 import { supabaseClient as supabase } from './supabase-config.js';
-import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './common.js';
+import { showLoading, hideLoading, showToast } from './common.js';
 
 let currentEditId = null; // Para futura funcionalidade de edição, caso implementada.
 
@@ -12,8 +12,7 @@ const cancelBtn = document.getElementById('cancelFormBtn');
 const cepInput = document.getElementById('cep');
 const addPavementBtn = document.getElementById('add-pavement-btn');
 const areaTableBody = document.getElementById('area-table-body');
-const tabs = document.querySelectorAll('.tab');
-const sections = document.querySelectorAll('.form-section');
+// Nota: as abas agora são controladas diretamente no initializePage() de registro_empreendimento.html
 
 // Mapeamento dos IDs dos campos estáticos para facilitar a coleta de dados
 const fieldIds = [
@@ -102,59 +101,45 @@ function calculateTotalArea() {
     });
     // Aqui você pode atualizar um elemento no HTML para mostrar a área total
     // Ex: document.getElementById('totalAreaDisplay').textContent = total.toFixed(2);
-    // Como não há um elemento específico para isso no HTML que me foi fornecido,
-    // apenas calculamos e, se precisar, você pode exibir depois.
+    // Como não há um elemento específico para isso no HTML, apenas calculamos.
 }
 
 // Event listener para ações dentro do quadro de áreas (mover/excluir)
-areaTableBody.addEventListener('click', (e) => {
-    const target = e.target.closest('.btn-action');
-    if (!target) return;
+if (areaTableBody) {
+    areaTableBody.addEventListener('click', (e) => {
+        const target = e.target.closest('.btn-action');
+        if (!target) return;
 
-    const row = target.closest('.area-table-row');
+        const row = target.closest('.area-table-row');
 
-    if (target.classList.contains('delete')) {
-        if (confirm('Tem certeza que deseja excluir este pavimento?')) {
-            row.remove();
-            calculateTotalArea(); // Recalcula a área total após a exclusão
+        if (target.classList.contains('delete')) {
+            if (confirm('Tem certeza que deseja excluir este pavimento?')) {
+                row.remove();
+                calculateTotalArea(); // Recalcula a área total após a exclusão
+            }
+        } else if (target.classList.contains('move-up')) {
+            const prevRow = row.previousElementSibling;
+            if (prevRow) {
+                areaTableBody.insertBefore(row, prevRow);
+            }
+        } else if (target.classList.contains('move-down')) {
+            const nextRow = row.nextElementSibling;
+            if (nextRow) {
+                areaTableBody.insertBefore(nextRow, row);
+            }
         }
-    } else if (target.classList.contains('move-up')) {
-        const prevRow = row.previousElementSibling;
-        if (prevRow) {
-            areaTableBody.insertBefore(row, prevRow);
-        }
-    } else if (target.classList.contains('move-down')) {
-        const nextRow = row.nextElementSibling;
-        if (nextRow) {
-            areaTableBody.insertBefore(nextRow, row);
-        }
-    }
-});
+    });
+}
+
 
 // Event listener para o botão de adicionar pavimento
-addPavementBtn.addEventListener('click', () => createAreaRow());
-
-// --- LÓGICA DAS ABAS (Tabs) ---
-function setupTabs() {
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const tabTarget = tab.dataset.tab;
-            sections.forEach(section => {
-                section.classList.toggle('active', section.dataset.tabContent === tabTarget);
-            });
-        });
-    });
-
-    // Ativa a primeira aba ao carregar a página
-    if (tabs.length > 0) {
-        tabs[0].click(); 
-    }
+if (addPavementBtn) {
+    addPavementBtn.addEventListener('click', () => createAreaRow());
 }
 
 
 // --- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO DO MÓDULO ---
+// Esta função é chamada pelo registro_empreendimento.html após a autenticação
 export function initializeEmpreendimentoModule() {
     // Adiciona Listeners de Máscaras e CEP
     if (cepInput) {
@@ -166,33 +151,40 @@ export function initializeEmpreendimentoModule() {
     if (empreendimentoForm) {
         empreendimentoForm.addEventListener('submit', handleFormSubmit);
     }
-    if (saveBtn) {
-        // O listener de submit já está no formulário, este botão apenas dispara
-        // garantimos que o type="submit" no HTML está correto
-    }
+    // O botão 'saveBtn' tem type="submit" no HTML, então ele dispara o submit do form
+    // Não precisa de um listener extra aqui, a menos que haja lógica pré-submit
+    
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => {
             if (confirm('Tem certeza que deseja limpar todos os campos?')) {
                 empreendimentoForm.reset();
                 areaTableBody.innerHTML = ''; // Limpa a tabela de áreas
                 createAreaRow('Térreo'); // Adiciona a linha inicial de volta
-                setupTabs(); // Volta para a primeira aba
+                // Como as abas agora são controladas no initializePage() do HTML,
+                // apenas garantimos que a primeira aba seja reativada visualmente se necessário.
+                document.querySelector('.tab[data-tab="geral"]')?.click();
             }
         });
     }
 
-    // Inicializa o quadro de áreas com uma linha padrão
-    createAreaRow('Térreo');
-    calculateTotalArea(); // Calcula a área inicial
-
-    // Configura as abas
-    setupTabs();
+    // Inicializa o quadro de áreas com uma linha padrão se o elemento existir
+    if (areaTableBody) {
+        areaTableBody.innerHTML = ''; // Garante que esteja limpo antes de adicionar
+        createAreaRow('Térreo');
+        calculateTotalArea(); // Calcula a área inicial
+    }
 }
+
 
 // --- FUNÇÃO DE ENVIO DO FORMULÁRIO PARA SUPABASE ---
 async function handleFormSubmit(e) {
     e.preventDefault();
     showLoading();
+
+    // Desabilita o botão para evitar múltiplos envios
+    if (saveBtn) {
+        saveBtn.disabled = true;
+    }
 
     // Coleta dados dos campos estáticos
     const empreendimentoData = {};
@@ -235,32 +227,28 @@ async function handleFormSubmit(e) {
 
         showToast('success', 'Sucesso!', 'Empreendimento cadastrado com sucesso.');
         empreendimentoForm.reset(); // Limpa o formulário após o sucesso
-        areaTableBody.innerHTML = ''; // Limpa a tabela de áreas
-        createAreaRow('Térreo'); // Adiciona a linha inicial de volta
-        setupTabs(); // Volta para a primeira aba
+        
+        // Limpa e reinicializa o quadro de áreas
+        if (areaTableBody) {
+            areaTableBody.innerHTML = '';
+            createAreaRow('Térreo');
+            calculateTotalArea();
+        }
+        
+        // Ativa a primeira aba novamente
+        document.querySelector('.tab[data-tab="geral"]')?.click();
         
     } catch (error) {
         console.error("Erro ao salvar empreendimento:", error);
         showToast('error', 'Erro ao Salvar', 'Não foi possível cadastrar o empreendimento.');
     } finally {
         hideLoading();
-        saveBtn.disabled = false; // Garante que o botão de salvar seja reativado
+        if (saveBtn) {
+            saveBtn.disabled = false; // Garante que o botão de salvar seja reativado
+        }
     }
 }
 
-
-// --- INICIALIZAÇÃO DA PÁGINA (CHAMADA PRINCIPAL) ---
-// Esta função será chamada pelo <script type="module"> no HTML da página
-// Ela garante que a sidebar, informações do usuário e as funções do módulo sejam ativadas
-document.addEventListener('DOMContentLoaded', async () => {
-    // Carrega a sidebar primeiro
-    await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-
-    // Verifica a autenticação e, se autenticado, inicializa a UI e o módulo de empreendimento
-    // O checkAuthAndRedirect já lida com o redirecionamento se não estiver logado
-    checkAuthAndRedirect((user) => {
-        initializeCommonUI(user); // Inicializa a data, hora e info do usuário no cabeçalho
-        initializeSidebarToggle(); // Configura o botão de recolher/expandir a sidebar
-        initializeEmpreendimentoModule(); // Inicializa o módulo específico desta página
-    });
-});
+// Não há mais a chamada initializePage() aqui.
+// Ela agora está no registro_empreendimento.html e é responsável
+// por chamar initializeEmpreendimentoModule() no momento certo.

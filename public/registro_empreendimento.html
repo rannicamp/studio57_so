@@ -167,30 +167,25 @@
     </div>
 
     <script type="module">
-        // REMOVER IMPORTS DO FIREBASE
-        // import { app } from './js/firebase-config.js'; 
-        // import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        // import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // NOVAS IMPORTAÇÕES PARA SUPABASE
-        import { supabaseClient } from './js/supabase-config.js'; // Importa o cliente Supabase
+        // Importações para Supabase
+        import { supabaseClient } from './js/supabase-config.js';
         
-        // As funções abaixo já são de common.js, então basta importar e usar
+        // Funções comuns de UI e autenticação
         import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
         
-        // Importa o módulo de empreendimento. Note que ele não precisa mais 'db' ou 'auth' no parâmetro, pois ele importa o supabaseClient internamente.
+        // Módulo específico da página de Empreendimento
         import { initializeEmpreendimentoModule } from './js/empreendimento.js';
 
         async function initializePage() {
             await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            
-            // A verificação de autenticação e inicialização da UI comum agora usam o supabaseClient diretamente
+
+            // checkAuthAndRedirect agora usa supabaseClient internamente, não precisa de 'auth' ou 'db'
             checkAuthAndRedirect((user) => {
                 initializeCommonUI(user);
                 initializeSidebarToggle();
                 
-                // Inicializa o módulo de empreendimento sem passar 'db' ou 'auth'
-                initializeEmpreendimentoModule();
+                // initializeEmpreendimentoModule agora também não precisa de 'db'
+                initializeEmpreendimentoModule(); // Chama o módulo específico desta página
 
                 // Lógica para controlar as abas - MANTIDA AQUI, POIS É ESPECÍFICA DESTA PÁGINA
                 const tabs = document.querySelectorAll('.tab');
