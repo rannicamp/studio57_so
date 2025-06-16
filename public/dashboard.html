@@ -5,64 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Studio 57</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="page-wrapper">
-        <div id="sidebar-placeholder"></div>
-        <div class="main-content-area-wrapper">
-            <header class="main-header">
-                <h1 id="page-title-header">Dashboard</h1>
-                <div class="header-user-info">
-                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
-                    <div id="current-datetime">--/--/---- --:--:--</div>
-                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
-            </header>
-            <main class="content-scrollable">
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h4>Vendas (Res. Alfa)</h4>
-                        <p class="card-value" id="card-vendas-valor">-- / --</p>
-                        <p class="card-description">Unidades Vendidas / Total</p>
-                        <a href="#" class="card-link">Ver Tabela <i class="fas fa-arrow-right text-xs ml-1"></i></a>
-                    </div>
-                    <div class="dashboard-card">
-                        <h4>Folha de Ponto (Hoje)</h4>
-                        <p class="card-value" id="card-ponto-valor">--</p>
-                        <p class="card-description">Funcionários com registro</p>
-                        <a href="folha_de_ponto.html" class="card-link">Acessar Folha <i class="fas fa-arrow-right text-xs ml-1"></i></a>
-                    </div>
-                    <div class="dashboard-card">
-                        <h4>Diário de Obra</h4>
-                        <p class="card-description">Último Registro: <strong id="card-diario-data">--/--/----</strong></p>
-                        <p class="card-description">Clima: <strong id="card-diario-clima">--</strong></p>
-                        <a href="diariodeobras.html" class="card-link">Ver Diários <i class="fas fa-arrow-right text-xs ml-1"></i></a>
-                    </div>
-                     <div class="dashboard-card">
-                        <h4>Orçamentos</h4>
-                        <p class="card-value" id="card-orcamentos-valor">--</p>
-                        <p class="card-description">Criados este mês</p>
-                        <a href="orcamento_frontend.html" class="card-link">Ver Orçamentos <i class="fas fa-arrow-right text-xs ml-1"></i></a>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-    <script type="module">
-        import { app } from './js/firebase-config.js';
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
+    <div id="sidebar-placeholder"></div>
 
-        async function initializePage() {
-            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            const auth = getAuth(app);
-            checkAuthAndRedirect(auth, 'index.html', (user) => {
-                initializeCommonUI(user);
-                initializeSidebarToggle();
-            });
-        }
-        initializePage();
+    <div class="main-content-area-wrapper">
+        <header class="main-header">
+            <div class="header-right">
+                <div class="datetime-display">
+                    <i class="far fa-calendar-alt"></i>
+                    <span id="current-datetime">--/--/---- --:--</span>
+                </div>
+                <div id="user-info" class="user-info">
+                    <i class="far fa-user-circle"></i>
+                    <span>Carregando...</span>
+                </div>
+                <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <h1 class="page-title">Dashboard</h1>
+            <div class="card">
+                <h2 class="card-header">Bem-vindo(a) ao sistema de gestão do Studio 57!</h2>
+                <p>Utilize o menu à esquerda para navegar entre as funcionalidades do sistema, como cadastrar novos empreendimentos, gerenciar funcionários e registrar os Relatórios Diários de Obra (RDO).</p>
+            </div>
+        </main>
+    </div>
+    
+    <div id="loadingSpinner" style="display: none;"></div>
+    <div id="toastContainer"></div>
+
+    <script type="module">
+        import { checkAuthAndRedirect } from './js/common.js';
+        checkAuthAndRedirect();
     </script>
 </body>
 </html>

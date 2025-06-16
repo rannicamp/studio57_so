@@ -1,37 +1,57 @@
-<div class="sidebar" id="sidebar">
-    <div class="logo-container">
-        <button id="sidebar-toggle-btn" style="position: absolute; left: 10px; top: 20px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--color-dark-gray);"><i class="fas fa-bars"></i></button>
+<nav class="sidebar">
+    <div class="sidebar-header">
         <a href="dashboard.html">
-            <img src="https://studio57.arq.br/wp-content/uploads/2025/04/STUDIO-57-PRETO-RETANGULO.png" alt="Logo Studio 57">
+            <img src="https://studio57.arq.br/wp-content/uploads/2025/04/STUDIO-57-PRETO-RETANGULO.png" alt="Logo Studio 57" class="logo">
         </a>
     </div>
-    <nav>
-        <ul>
-            <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i><span class="link-text">DASHBOARD</span></a></li>
-            
-            <li class="section-title-sidebar"><span>ADMINISTRATIVO</span></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-calendar-alt"></i><span class="link-text">Folha de Ponto</span></a></li>
-            <li><a href="quadro_de_funcionarios.html" class="nav-link"><i class="fas fa-users"></i><span class="link-text">Funcionários</span></a></li>
-            
-            <li class="section-title-sidebar"><span>OBRAS</span></li>
-            <li><a href="registro_empreendimento.html" class="nav-link"><i class="fas fa-building"></i><span class="link-text">Empreendimentos</span></a></li>
-            <li><a href="lista-rdo.html" class="nav-link"><i class="fas fa-book-open"></i><span class="link-text">Diário de Obras</span></a></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-file-invoice-dollar"></i><span class="link-text">Orçamentos</span></a></li>
-            <li><a href="gantt.html" class="nav-link"><i class="fas fa-tasks"></i><span class="link-text">Cronogramas</span></a></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-hard-hat"></i><span class="link-text">Materiais</span></a></li>
-
-            <li class="section-title-sidebar"><span>COMERCIAL</span></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-chart-line"></i><span class="link-text">Tabela de Vendas</span></a></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-calculator"></i><span class="link-text">Simulador</span></a></li>
-
-            <li class="section-title-sidebar"><span>FERRAMENTAS</span></li>
-            <li><a href="#" class="nav-link"><i class="fas fa-project-diagram"></i><span class="link-text">Mapa Mental</span></a></li>
-        </ul>
-    </nav>
-    <div class="logout-link-container">
-         <button id="logout-button-sidebar" class="btn btn-outline-form" style="width: 100%;">
-            <i class="fas fa-sign-out-alt"></i>
-            <span class="link-text">Sair</span>
-        </button>
-    </div>
-</div>
+    <ul class="nav">
+        <li class="nav-item">
+            <a class="nav-link" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="nav-text">Dashboard</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="registro_empreendimento.html">
+                <i class="fas fa-building"></i>
+                <span class="nav-text">Novo Empreendimento</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="registro_funcionario.html">
+                <i class="fas fa-user-plus"></i>
+                <span class="nav-text">Novo Funcionário</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="quadro_de_funcionarios.html">
+                <i class="fas fa-users"></i>
+                <span class="nav-text">Quadro de Funcionários</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="rdo.html">
+                <i class="fas fa-file-alt"></i>
+                <span class="nav-text">Novo RDO</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="lista-rdo.html">
+                <i class="fas fa-list-alt"></i>
+                <span class="nav-text">Ver RDOs</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="gantt.html">
+                <i class="fas fa-tasks"></i>
+                <span class="nav-text">Cronograma (Gantt)</span>
+            </a>
+        </li>
+        <li class="nav-item">
+             <a class="nav-link logout-link" href="#" id="logout-button-sidebar">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="nav-text">Sair</span>
+            </a>
+        </li>
+    </ul>
+</nav>

@@ -1,6 +1,4 @@
 // public/js/auth.js
-
-// Importa o cliente supabase que criamos no arquivo de configuração.
 import { supabase } from './supabase-config.js';
 
 // --- LÓGICA DE LOGIN ---
@@ -11,21 +9,18 @@ if (loginForm) {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const errorMessageDiv = document.getElementById('error-message-new');
-        errorMessageDiv.style.display = 'none'; // Esconde a mensagem de erro anterior
+        errorMessageDiv.style.display = 'none';
 
-        // Tenta fazer o login com o Supabase
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
         if (error) {
-            // Se o Supabase retornar um erro, mostra uma mensagem
             console.error('Erro de login:', error.message);
             errorMessageDiv.textContent = 'E-mail ou senha incorretos. Tente novamente.';
             errorMessageDiv.style.display = 'block';
         } else {
-            // Se o login for bem-sucedido, redireciona para o dashboard
             console.log('Usuário logado:', data.user);
             window.location.href = 'dashboard.html';
         }
@@ -40,9 +35,8 @@ if (resetPasswordForm) {
         const email = document.getElementById('reset-email').value;
         const messageDiv = document.getElementById('reset-message');
 
-        // Pede ao Supabase para enviar o e-mail de recuperação
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin, // Opcional: para onde redirecionar após a troca de senha
+            redirectTo: window.location.origin,
         });
 
         if (error) {
@@ -73,7 +67,6 @@ if (registerForm) {
             return;
         }
 
-        // Tenta registrar um novo usuário no Supabase
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: password,
@@ -86,7 +79,6 @@ if (registerForm) {
         } else {
             messageDiv.textContent = 'Usuário registrado com sucesso! Verifique seu e-mail para confirmação e depois faça o login.';
             messageDiv.style.color = 'green';
-             // Não redireciona mais automaticamente, o usuário precisa confirmar o e-mail primeiro.
         }
     });
 }

@@ -4,21 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quadro de Funcionários - Studio 57</title>
-    
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    </head>
+</head>
 <body>
     <div class="page-wrapper">
-        
         <div id="sidebar-placeholder"></div>
 
         <div class="main-content-area-wrapper">
             <header class="main-header">
+                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
                 <h1 id="page-title-header">Quadro de Funcionários</h1>
                 <div class="header-user-info">
                     <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
@@ -26,51 +21,178 @@
                     <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </header>
-
-            <main class="content-scrollable" id="main-quadro-content">
+            
+            <main class="content-scrollable">
                 <div class="toast-container" id="toastContainer"></div>
-                <div class="spinner-overlay" id="loadingSpinner"><div class="spinner"></div></div>
                 
-                <div class="actions-bar">
-                    <div class="search-container">
-                        <input type="text" id="searchQuadroInput" class="form-control" placeholder="Buscar por nome, CPF ou cargo...">
+                <div class="table-container">
+                    <div class="table-actions">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nome, cargo ou CPF...">
+                        <a href="registro_funcionario.html" class="btn btn-primary-form"><i class="fas fa-plus"></i> Adicionar Funcionário</a>
                     </div>
-                    <a href="registro_funcionario.html" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Novo Funcionário</span>
-                    </a>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Foto</th>
+                                    <th>Nome Completo</th>
+                                    <th>Cargo</th>
+                                    <th>Empreendimento</th>
+                                    <th>Telefone</th>
+                                    <th>CPF</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="funcionarios-table-body">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div id="employee-grid-container" class="employee-grid">
-                    <p id="loading-message" class="loading-message-full-page">Carregando funcionários...</p>
+                <div class="loading-overlay" id="loadingSpinner" style="display: none;">
+                    <div class="spinner"></div>
                 </div>
             </main>
         </div>
     </div>
-
+    
     <script type="module">
-        import { app } from './js/firebase-config.js';
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
-        import { initializeQuadroFuncionariosModule } from './js/quadro_funcionarios.js';
+        import { supabaseClient as supabase } from './js/supabase-config.js';
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
 
+        let allFuncionarios = [];
+
+        // --- INICIALIZAÇÃO DA PÁGINA ---
         async function initializePage() {
             await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-
-            const authInstance = getAuth(app); 
-            const db = getFirestore(app);
-            const storage = getStorage(app);
-
-            checkAuthAndRedirect(authInstance, 'index.html', (user) => {
-                initializeCommonUI(user); 
+            checkAuthAndRedirect((user) => {
+                initializeCommonUI(user);
                 initializeSidebarToggle();
-                initializeQuadroFuncionariosModule(db, storage);
+                loadFuncionarios();
+            });
+        }
+        initializePage();
+
+        // --- LÓGICA DA PÁGINA ---
+        const tableBody = document.getElementById('funcionarios-table-body');
+        const searchInput = document.getElementById('searchInput');
+
+        async function loadFuncionarios() {
+            showLoading();
+            tableBody.innerHTML = '<tr><td colspan="7">Carregando funcionários...</td></tr>';
+            
+            const { data, error } = await supabase
+                .from('funcionario')
+                .select('*')
+                .order('nomeCompleto', { ascending: true });
+
+            hideLoading();
+            if (error) {
+                console.error("Erro ao buscar funcionários:", error);
+                tableBody.innerHTML = '<tr><td colspan="7" class="error">Falha ao carregar dados.</td></tr>';
+                showToast('error', 'Erro', 'Não foi possível carregar os funcionários.');
+                return;
+            }
+
+            allFuncionarios = data;
+            renderTable(allFuncionarios);
+        }
+
+        function renderTable(funcionarios) {
+            tableBody.innerHTML = ''; // Limpa a tabela
+            if (funcionarios.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7">Nenhum funcionário encontrado.</td></tr>';
+                return;
+            }
+
+            funcionarios.forEach(func => {
+                const row = document.createElement('tr');
+                // Link de edição corrigido para apontar para registro_funcionario.html com o ID
+                row.innerHTML = `
+                    <td>
+                        <img src="${func.fotoFuncionarioUrl || 'https://via.placeholder.com/40'}" alt="Foto de ${func.nomeCompleto}" class="table-photo">
+                    </td>
+                    <td data-label="Nome">${func.nomeCompleto}</td>
+                    <td data-label="Cargo">${func.cargo}</td>
+                    <td data-label="Empreendimento">${func.empreendimentoNome || 'N/A'}</td>
+                    <td data-label="Telefone">${func.telefone || 'N/A'}</td>
+                    <td data-label="CPF">${func.cpf}</td>
+                    <td data-label="Ações">
+                        <div class="table-action-buttons">
+                            <a href="registro_funcionario.html?id=${func.id}" class="btn-action btn-edit" title="Editar"><i class="fas fa-pencil-alt"></i></a>
+                            <button class="btn-action btn-delete" data-id="${func.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </td>
+                `;
+
+                // Adiciona evento de exclusão
+                row.querySelector('.btn-delete').addEventListener('click', (e) => {
+                    const funcId = e.currentTarget.dataset.id;
+                    const funcionario = allFuncionarios.find(f => f.id == funcId);
+                    if (confirm(`Tem certeza que deseja excluir ${funcionario.nomeCompleto}? Esta ação é irreversível.`)) {
+                        deleteFuncionario(funcId, funcionario);
+                    }
+                });
+
+                tableBody.appendChild(row);
             });
         }
 
-        initializePage();
+        async function deleteFuncionario(id, funcionario) {
+            showLoading();
+            try {
+                // 1. Coleta todos os caminhos de arquivos a serem excluídos no Storage
+                const filePaths = [
+                    funcionario.fotoFuncionarioPath,
+                    funcionario.contratoFuncionarioPath,
+                    funcionario.identidadeFuncionarioPath,
+                    funcionario.asoFuncionarioPath
+                ].filter(Boolean); // Filtra para remover nulos ou vazios
+
+                // 2. Se houver arquivos, excluí-los do Storage
+                if (filePaths.length > 0) {
+                    const { error: storageError } = await supabase.storage
+                        .from('documentosfuncionarios')
+                        .remove(filePaths);
+                    
+                    if (storageError) {
+                        console.warn("Aviso: erro ao deletar arquivos do storage:", storageError);
+                        showToast('warning', 'Aviso', 'Não foi possível remover os arquivos, mas o registro será excluído.');
+                    }
+                }
+
+                // 3. Excluir o registro do banco de dados (tabela 'funcionario')
+                const { error: dbError } = await supabase
+                    .from('funcionario')
+                    .delete()
+                    .eq('id', id);
+
+                if (dbError) throw dbError;
+
+                showToast('success', 'Sucesso', 'Funcionário excluído com sucesso.');
+                loadFuncionarios(); // Recarrega a lista
+
+            } catch (error) {
+                console.error("Erro ao excluir funcionário:", error);
+                showToast('error', 'Erro', 'Não foi possível excluir o funcionário.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // Lógica de busca
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const filteredFuncionarios = allFuncionarios.filter(func => {
+                return (
+                    func.nomeCompleto.toLowerCase().includes(searchTerm) ||
+                    func.cargo.toLowerCase().includes(searchTerm) ||
+                    (func.cpf && func.cpf.includes(searchTerm))
+                );
+            });
+            renderTable(filteredFuncionarios);
+        });
+
     </script>
 </body>
 </html>

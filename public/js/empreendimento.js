@@ -1,177 +1,166 @@
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { APP_COLLECTION_ID } from './firebase-config.js';
-import { showLoading, hideLoading, showToast } from './common.js';
+// public/js/empreendimento.js
 
-function applyCepMask(e) {
-    e.target.value = e.target.value.replace(/\D/g, '').replace(/^(\d{5})(\d)/, '$1-$2');
+import { supabase } from './supabase-config.js';
+import { checkAuthAndRedirect, showLoading, hideLoading, showToast } from './common.js';
+
+// Lista de todos os IDs de campos do formulário para facilitar o manuseio
+const fieldIds = [
+    'nomeEmpreendimento', 'usoImovel', 'descricaoProjeto', 'cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado',
+    'lote', 'quadra', 'zona', 'via', 'areaTerreno', 'proprietarioNome', 'proprietarioCpfCnpj', 'responsavelTecnicoNome',
+    'cauCrea', 'numPavimentos', 'coefAproveitamento', 'taxaPermeabilidade', 'unidadesResidenciais', 'unidadesNaoResidenciais',
+    'vagasEstacionamento', 'observacoesEdificacao', 'statusAprovacao', 'dataAprovacao', 'numProcesso', 'responsavelAprovacao'
+];
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuthAndRedirect();
+
+    const form = document.getElementById('empreendimentoForm');
+    const pageTitle = document.getElementById('pageTitle');
+    const addAreaRowBtn = document.getElementById('addAreaRow');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const empreendimentoId = urlParams.get('id');
+
+    if (empreendimentoId) {
+        pageTitle.textContent = "Editar Empreendimento";
+        showLoading('Carregando dados do empreendimento...');
+        await loadEmpreendimentoData(empreendimentoId);
+        hideLoading();
+    }
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        saveEmpreendimento(empreendimentoId);
+    });
+
+    addAreaRowBtn.addEventListener('click', () => addAreaRow());
+});
+
+/**
+ * Adiciona uma nova linha à tabela do Quadro de Áreas.
+ */
+function addAreaRow(data = { pavimento: '', uso: '', area: '' }) {
+    const tableBody = document.getElementById('quadroDeAreasTable').querySelector('tbody');
+    const newRow = tableBody.insertRow();
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control" value="${data.pavimento}" data-field="pavimento"></td>
+        <td><input type="text" class="form-control" value="${data.uso}" data-field="uso"></td>
+        <td><input type="number" class="form-control" value="${data.area}" data-field="area" step="0.01"></td>
+        <td><button type="button" class="btn-delete action-buttons"><i class="fas fa-trash-alt"></i></button></td>
+    `;
+    newRow.querySelector('.btn-delete').addEventListener('click', () => {
+        newRow.remove();
+    });
 }
 
-export function initializeEmpreendimentoModule(db) {
-    const empreendimentoForm = document.getElementById('empreendimentoForm');
-    const saveBtn = document.getElementById('saveBtn');
-    const cancelBtn = document.getElementById('cancelFormBtn');
-    const cepInput = document.getElementById('cep');
-    const addPavementBtn = document.getElementById('add-pavement-btn');
-    const areaTableBody = document.getElementById('area-table-body');
+/**
+ * Carrega os dados de um empreendimento do Supabase e preenche o formulário.
+ * @param {string} id - O ID do empreendimento.
+ */
+async function loadEmpreendimentoData(id) {
+    const { data, error } = await supabase
+        .from('empreendimentos')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    // Mapeamento dos IDs dos campos estáticos
-    const fieldIds = [
-        "nomeEmpreendimento", "usoImovel", "descricaoProjeto",
-        "cep", "logradouro", "numero", "bairro", "cidade", "estado",
-        "lote", "quadra", "zona", "via", "areaTerreno",
-        "proprietarioNome", "proprietarioCpfCnpj", "responsavelTecnicoNome", "cauCrea",
-        "numPavimentos", "coefAproveitamento", "taxaPermeabilidade", "unidadesResidenciais",
-        "unidadesNaoResidenciais", "vagasEstacionamento", "observacoesEdificacao",
-        "statusAprovacao", "dataAprovacao", "numProcesso", "responsavelAprovacao"
-    ];
-
-    // --- LÓGICA DA TABELA DE ÁREAS ---
-    
-    function createAreaRow(pavimento = '', area = '') {
-        const row = document.createElement('div');
-        row.className = 'area-table-row';
-        row.innerHTML = `
-            <div class="area-table-cell">
-                <input type="text" class="form-control pavement-name" placeholder="Ex: Térreo" value="${pavimento}">
-            </div>
-            <div class="area-table-cell">
-                <input type="number" class="form-control pavement-area" placeholder="0.00" step="0.01" value="${area}">
-            </div>
-            <div class="area-table-cell area-table-actions">
-                <button type="button" class="btn-action move-up" title="Mover para Cima"><i class="fas fa-arrow-up"></i></button>
-                <button type="button" class="btn-action move-down" title="Mover para Baixo"><i class="fas fa-arrow-down"></i></button>
-                <button type="button" class="btn-action delete" title="Excluir"><i class="fas fa-trash-alt"></i></button>
-            </div>
-        `;
-        areaTableBody.appendChild(row);
+    if (error || !data) {
+        console.error('Erro ao carregar dados do empreendimento:', error);
+        showToast('error', 'Erro', 'Empreendimento não encontrado.');
+        return;
     }
 
-    areaTableBody.addEventListener('click', (e) => {
-        const target = e.target.closest('.btn-action');
-        if (!target) return;
-
-        const row = target.closest('.area-table-row');
-
-        if (target.classList.contains('delete')) {
-            if (confirm('Tem certeza que deseja excluir este pavimento?')) {
-                row.remove();
-            }
-        } else if (target.classList.contains('move-up')) {
-            const prevRow = row.previousElementSibling;
-            if (prevRow) {
-                areaTableBody.insertBefore(row, prevRow);
-            }
-        } else if (target.classList.contains('move-down')) {
-            const nextRow = row.nextElementSibling;
-            if (nextRow) {
-                areaTableBody.insertBefore(nextRow, row);
-            }
+    // Preenche todos os campos de texto e numéricos
+    fieldIds.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element && data[fieldId] !== null) {
+            element.value = data[fieldId];
         }
     });
 
-    addPavementBtn.addEventListener('click', () => createAreaRow());
-    
-    // Inicializa com algumas linhas padrão
-    createAreaRow('Térreo');
-
-    // --- LÓGICA DO FORMULÁRIO (CEP e SUBMIT) ---
-
-    // CORREÇÃO: Função de busca de CEP foi implementada corretamente
-    async function fetchAddressFromCEP(cepValue) {
-        const cleanCep = cepValue.replace(/\D/g, '');
-        if (cleanCep.length !== 8) {
-            return; // Sai se o CEP não tiver 8 dígitos
-        }
-
-        showLoading();
-        try {
-            const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-            if (!response.ok) {
-                throw new Error('Falha na resposta da API');
-            }
-            
-            const data = await response.json();
-            if (data.erro) {
-                showToast('warning', 'CEP não encontrado', 'Verifique o CEP digitado e tente novamente.');
-            } else {
-                // Preenche os campos de endereço
-                document.getElementById('logradouro').value = data.logradouro || '';
-                document.getElementById('bairro').value = data.bairro || '';
-                document.getElementById('cidade').value = data.localidade || '';
-                document.getElementById('estado').value = data.uf || '';
-                document.getElementById('numero').focus(); // Coloca o cursor no campo de número
-            }
-        } catch (error) {
-            console.error("Erro ao buscar CEP:", error);
-            showToast('error', 'Erro na Busca', 'Não foi possível buscar o endereço. Tente preencher manualmente.');
-        } finally {
-            hideLoading();
-        }
+    // Preenche a tabela do Quadro de Áreas
+    if (data.quadroDeAreas && Array.isArray(data.quadroDeAreas)) {
+        data.quadroDeAreas.forEach(area => addAreaRow(area));
     }
-    
-    cepInput.addEventListener('input', applyCepMask);
-    cepInput.addEventListener('blur', (e) => fetchAddressFromCEP(e.target.value));
+}
 
-    empreendimentoForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        showLoading();
-        saveBtn.disabled = true;
 
+/**
+ * Coleta os dados do Quadro de Áreas da tabela do formulário.
+ * @returns {Array<Object>} Um array de objetos, cada um representando uma linha da tabela.
+ */
+function getQuadroDeAreasData() {
+    const tableBody = document.getElementById('quadroDeAreasTable').querySelector('tbody');
+    const rows = tableBody.querySelectorAll('tr');
+    const data = [];
+    rows.forEach(row => {
+        const rowData = {
+            pavimento: row.querySelector('[data-field="pavimento"]').value,
+            uso: row.querySelector('[data-field="uso"]').value,
+            area: parseFloat(row.querySelector('[data-field="area"]').value) || 0
+        };
+        data.push(rowData);
+    });
+    return data;
+}
+
+/**
+ * Salva os dados do formulário no Supabase (cria ou atualiza).
+ * @param {string|null} empreendimentoId - O ID do empreendimento, se estiver editando.
+ */
+async function saveEmpreendimento(empreendimentoId) {
+    showLoading('Salvando empreendimento...');
+
+    try {
+        // Coleta os dados de todos os campos do formulário
         const empreendimentoData = {};
-        // Coleta dados dos campos estáticos
-        fieldIds.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                const value = element.value;
-                if (element.type === 'number') {
-                    empreendimentoData[id] = value ? Number(value) : null;
-                } else if(element.type === 'date') {
-                    empreendimentoData[id] = value || null;
-                } else {
-                    empreendimentoData[id] = value;
-                }
+        fieldIds.forEach(fieldId => {
+            const element = document.getElementById(fieldId);
+            if (element.type === 'number') {
+                empreendimentoData[fieldId] = parseFloat(element.value) || null;
+            } else if (element.type === 'date') {
+                 empreendimentoData[fieldId] = element.value || null;
+            }
+            else {
+                empreendimentoData[fieldId] = element.value || null;
             }
         });
+        
+        // Coleta os dados da tabela de áreas
+        empreendimentoData.quadroDeAreas = getQuadroDeAreasData();
 
-        // Coleta dados da tabela de áreas dinâmica
-        const quadroDeAreas = [];
-        const areaRows = areaTableBody.querySelectorAll('.area-table-row');
-        areaRows.forEach(row => {
-            const nome = row.querySelector('.pavement-name').value;
-            const area = row.querySelector('.pavement-area').value;
-            if (nome && area) { // Salva apenas se ambos os campos estiverem preenchidos
-                quadroDeAreas.push({ pavimento: nome, area: Number(area) });
-            }
-        });
-        empreendimentoData.quadroDeAreas = quadroDeAreas;
-
-        empreendimentoData.criadoEm = serverTimestamp();
-        empreendimentoData.atualizadoEm = serverTimestamp();
-
-        try {
-            const empreendimentosRef = collection(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`);
-            await addDoc(empreendimentosRef, empreendimentoData);
-            
-            showToast('success', 'Sucesso!', 'Empreendimento cadastrado com sucesso.');
-            empreendimentoForm.reset();
-            areaTableBody.innerHTML = ''; // Limpa a tabela
-            createAreaRow('Térreo'); // Adiciona a linha inicial de volta
-            document.querySelector('.tab[data-tab="geral"]')?.click();
-             
-        } catch (error) {
-            console.error("Erro ao salvar empreendimento:", error);
-            showToast('error', 'Erro', 'Não foi possível salvar os dados. Tente novamente.');
-        } finally {
-            hideLoading();
-            saveBtn.disabled = false;
+        let error;
+        if (empreendimentoId) {
+            // Se estamos editando, faz um UPDATE
+            const { error: updateError } = await supabase
+                .from('empreendimentos')
+                .update(empreendimentoData)
+                .eq('id', empreendimentoId);
+            error = updateError;
+        } else {
+            // Se não, faz um INSERT
+            const { error: insertError } = await supabase
+                .from('empreendimentos')
+                .insert(empreendimentoData);
+            error = insertError;
         }
-    });
 
-    cancelBtn.addEventListener('click', () => {
-        if (confirm('Tem certeza que deseja limpar todos os campos?')) {
-            empreendimentoForm.reset();
-            areaTableBody.innerHTML = '';
-            createAreaRow('Térreo');
+        if (error) {
+            throw error;
         }
-    });
+
+        hideLoading();
+        showToast('success', 'Sucesso!', `Empreendimento ${empreendimentoId ? 'atualizado' : 'cadastrado'} com sucesso.`);
+        
+        // Limpa o formulário após o cadastro bem-sucedido (se não estiver editando)
+        if (!empreendimentoId) {
+             document.getElementById('empreendimentoForm').reset();
+             document.getElementById('quadroDeAreasTable').querySelector('tbody').innerHTML = '';
+        }
+
+    } catch (error) {
+        hideLoading();
+        console.error('Erro ao salvar empreendimento:', error);
+        showToast('error', 'Erro ao Salvar', `Ocorreu um problema: ${error.message}`);
+    }
 }
