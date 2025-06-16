@@ -1,8 +1,8 @@
 // public/js/supabase-config.js
 
-// Importa a biblioteca do Supabase JS diretamente da CDN sem o módulo problemático
-// Esta URL importa uma versão "umd" (Universal Module Definition) que é mais compatível com navegadores antigos e sem bundler
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/dist/umd/supabase.min.js';
+// Importa a função createClient diretamente do módulo principal do Supabase JS
+// Esta é a forma recomendada para uso com módulos ES6 em navegadores ou bundlers
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/module/supabase-js.js';
 
 // Suas credenciais do Supabase
 const supabaseUrl = "https://vhuvnutzklhskkwbpxdz.supabase.co";
