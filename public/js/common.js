@@ -1,68 +1,54 @@
 // public/js/common.js
 
-import { supabase } from './supabase-config.js';
+// O único import necessário é o do nosso arquivo de configuração.
+import { supabase } from '/js/supabase-config.js';
 
 /**
  * Função dedicada a carregar o menu lateral.
  */
 async function loadSidebar() {
     try {
-        // Busca o arquivo sidebar.html a partir da raiz do site.
-        const response = await fetch('sidebar.html');
+        const response = await fetch('/sidebar.html'); // Caminho corrigido com "/"
         if (!response.ok) {
             throw new Error(`Erro de rede ao buscar o menu: ${response.statusText}`);
         }
         const sidebarHTML = await response.text();
         const placeholder = document.getElementById('sidebar-placeholder');
-
         if (placeholder) {
             placeholder.innerHTML = sidebarHTML;
         } else {
-            console.error('Erro: O elemento #sidebar-placeholder não foi encontrado na página.');
+            console.error('Erro: O elemento #sidebar-placeholder não foi encontrado.');
         }
     } catch (error) {
         console.error('Falha crítica ao carregar o menu lateral:', error);
-        const placeholder = document.getElementById('sidebar-placeholder');
-        if (placeholder) {
-            // Mostra um erro no lugar do menu se algo der errado.
-            placeholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar o menu. Verifique o console para mais detalhes.</p>';
-        }
     }
 }
-
 
 /**
  * Verifica o login, carrega o menu e inicializa a página.
  */
 export async function checkAuthAndRedirect() {
     const { data: { session } } = await supabase.auth.getSession();
-
     if (!session) {
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
     } else {
-        // **LÓGICA CORRIGIDA:**
-        // 1. Primeiro, GARANTE que o menu foi carregado.
         await loadSidebar();
-        // 2. SÓ DEPOIS, inicializa a interface (que depende do menu já existir).
         initializeCommonUI(session.user);
     }
-
-    // Listener para caso o usuário deslogue em outra aba.
     supabase.auth.onAuthStateChange((_event, session) => {
         if (!session) {
-            window.location.href = 'index.html';
+            window.location.href = '/index.html';
         }
     });
 }
 
 /**
- * Adiciona as funcionalidades aos elementos da página (pressupõe que o menu já existe).
+ * Adiciona as funcionalidades aos elementos da página.
  */
 export function initializeCommonUI(user) {
-    // Seleciona os elementos que já estão na tela
     const userInfoSpan = document.getElementById('user-info')?.querySelector('span');
     const logoutButtonHeader = document.getElementById('logout-button-header');
-    const logoutButtonSidebar = document.getElementById('logout-button-sidebar'); // Agora este elemento existe
+    const logoutButtonSidebar = document.getElementById('logout-button-sidebar');
     const currentDatetimeSpan = document.getElementById('current-datetime');
     const navLinks = document.querySelectorAll('.sidebar .nav-link');
 
@@ -89,7 +75,8 @@ export function initializeCommonUI(user) {
     updateDateTime();
     setInterval(updateDateTime, 1000);
     
-    const currentPath = window.location.pathname.split('/').pop();
+    // Adiciona "/" ao caminho atual para comparação correta
+    const currentPath = window.location.pathname; 
     navLinks.forEach(link => {
         if (link.getAttribute('href') === currentPath) {
             link.classList.add('active');
@@ -97,8 +84,7 @@ export function initializeCommonUI(user) {
     });
 }
 
-
-// Funções de utilidade (Toast e Loading) - Sem alterações
+// Funções de utilidade (Toast e Loading)
 export function showLoading(message = 'Carregando...') {
     let el = document.getElementById('loadingSpinner');
     if (!el) {
