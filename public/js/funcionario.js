@@ -1,6 +1,6 @@
 // public/js/funcionario.js
 
-import { supabase } from './supabase-config.js';
+import { supabase } from './nhost-config.js';
 import { checkAuthAndRedirect, showLoading, hideLoading, showToast } from './common.js';
 
 // Roda o código quando a página terminar de carregar

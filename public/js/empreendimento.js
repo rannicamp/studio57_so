@@ -1,6 +1,6 @@
 // public/js/empreendimento.js
 
-import { supabase } from './supabase-config.js';
+import { supabase } from './nhost-config.js';
 import { checkAuthAndRedirect, showLoading, hideLoading, showToast } from './common.js';
 
 // Lista de todos os IDs de campos do formulário para facilitar o manuseio

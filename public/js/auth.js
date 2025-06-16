@@ -1,7 +1,7 @@
 // public/js/auth.js
 
-// Importa o cliente Supabase configurado e as funções comuns
-import { supabase } from './supabase-config.js';
+// Importa o cliente Nhost configurado e as funções comuns
+import { nhostAuth } from './nhost-config.js'; // Mudança aqui de supabase para nhostAuth
 import { showToast, showLoading, hideLoading } from './common.js';
 
 // Adiciona um listener para o carregamento completo do DOM
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Listener para o estado de autenticação (quando o usuário loga ou desloga)
     // Isso é útil para redirecionar usuários ou atualizar a UI
-    supabase.auth.onAuthStateChange((event, session) => {
+    nhostAuth.onAuthStateChanged((event, session) => { // Mudança aqui de onAuthStateChange para onAuthStateChanged do Nhost
         console.log('Evento de autenticação:', event, 'Sessão:', session);
         if (event === 'SIGNED_IN') {
             // Redireciona para o dashboard após login bem-sucedido
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Ao carregar a página, verifica se o usuário já está logado
     // e redireciona para o dashboard se estiver.
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = nhostAuth.getUser(); // Mudança aqui de supabase.auth.getUser() para nhostAuth.getUser()
     if (user && (window.location.pathname.endsWith('index.html') || window.location.pathname === '/')) {
         window.location.href = 'dashboard.html';
     }
@@ -67,7 +67,7 @@ async function handleLogin(event) {
     showLoading('Entrando...'); // Exibe mensagem de carregamento
 
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { session, error } = await nhostAuth.signIn({ // Mudança aqui de supabase.auth.signInWithPassword para nhostAuth.signIn
             email: email,
             password: password,
         });
@@ -107,16 +107,15 @@ async function handleRegister(event) {
     showLoading('Registrando...');
 
     try {
-        const { data, error } = await supabase.auth.signUp({
+        const { session, error } = await nhostAuth.signUp({ // Mudança aqui de supabase.auth.signUp para nhostAuth.signUp
             email: email,
             password: password,
-            // options: {
-            //     data: {
-            //         // Campos adicionais que você pode querer salvar no perfil do usuário no Supabase
-            //         // is_admin: false, // A coluna is_admin na tabela de usuários é tratada separadamente,
-            //                            // geralmente não é definida no registro direto por segurança.
-            //     }
-            // }
+            options: {
+                // Para o Nhost, se você quiser adicionar dados extras no registro,
+                // geralmente faz isso com uma função de autenticação ou após o registro
+                // no banco de dados via GraphQL/Hasura, não diretamente aqui como no Supabase.
+                // Mas para e-mail/senha básico, isso é suficiente.
+            }
         });
 
         if (error) {
@@ -125,7 +124,7 @@ async function handleRegister(event) {
             return;
         }
 
-        // Se o registro for bem-sucedido, o Supabase envia um e-mail de confirmação.
+        // Se o registro for bem-sucedido, o Nhost envia um e-mail de confirmação.
         // O usuário precisará confirmar o e-mail antes de poder fazer login.
         showToast('success', 'Registro Efetuado', 'Registro bem-sucedido! Verifique seu e-mail para confirmar a conta.');
         // Limpar o formulário após o registro
@@ -153,12 +152,15 @@ async function handleForgotPassword(event) {
     showLoading('Enviando e-mail...');
 
     try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            // Você pode especificar uma URL de redirecionamento aqui
-            // para onde o usuário será levado após clicar no link do e-mail.
-            // Por exemplo: redirectTo: 'http://localhost:5000/reset_password.html'
-            // O caminho precisa ser público e acessível.
-            redirectTo: window.location.origin + '/reset_password.html' // Assumindo que você terá uma página reset_password.html
+        const { error } = await nhostAuth.resetPassword({ // Mudança aqui de resetPasswordForEmail para resetPassword do Nhost
+            email: email,
+            options: {
+                // Você pode especificar uma URL de redirecionamento aqui
+                // para onde o usuário será levado após clicar no link do e-mail.
+                // Por exemplo: redirectTo: 'http://localhost:5000/reset_password.html'
+                // O caminho precisa ser público e acessível.
+                redirectTo: window.location.origin + '/reset_password.html' // Assumindo que você terá uma página reset_password.html
+            }
         });
 
         if (error) {
@@ -182,7 +184,7 @@ async function handleForgotPassword(event) {
 export async function handleLogout() {
     showLoading('Saindo...');
     try {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await nhostAuth.signOut(); // Mudança aqui de supabase.auth.signOut para nhostAuth.signOut
         if (error) {
             console.error('Erro ao fazer logout:', error.message);
             showToast('error', 'Erro ao Sair', 'Erro ao sair. Tente novamente.');

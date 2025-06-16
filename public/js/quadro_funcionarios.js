@@ -1,6 +1,6 @@
 // public/js/quadro_funcionarios.js
 
-import { supabase } from './supabase-config.js';
+import { supabase } from './nhost-config.js';
 import { checkAuthAndRedirect, showLoading, hideLoading, showToast } from './common.js';
 
 let allEmployees = []; // Guarda a lista completa de funcionários para a busca funcionar
