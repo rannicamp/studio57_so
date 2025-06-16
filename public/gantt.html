@@ -14,6 +14,7 @@
         <div id="sidebar-placeholder"></div>
         <div class="main-content-area-wrapper">
             <header class="main-header">
+                 <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
                 <h1 id="page-title-header">Cronograma (Gantt)</h1>
                 <div class="header-user-info">
                     <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
@@ -23,6 +24,7 @@
             </header>
             <main class="content-scrollable">
                 <div class="toast-container" id="toastContainer"></div>
+                <div class="loading-overlay" id="loadingSpinner" style="display: none;"><div class="spinner"></div></div>
 
                 <div class="form-container">
                      <div class="form-body" style="padding: 1.5rem;">
@@ -36,7 +38,7 @@
                              <button id="add-activity-btn" class="btn btn-primary-form" style="display: none;"><i class="fas fa-plus"></i> Adicionar Atividade</button>
                         </div>
                         
-                        <div id="gantt_chart_div" style="width: 100%; height: auto;">
+                        <div id="gantt_chart_div" style="width: 100%; height: auto; margin-top: 1.5rem;">
                              <div id="gantt-placeholder" class="gantt-placeholder">Selecione um empreendimento para ver o cronograma.</div>
                         </div>
                     </div>
@@ -57,54 +59,46 @@
                                         <select id="modal-activity-stage" class="form-control" required></select>
                                     </div>
                                     <div class="form-group">
-                                        <label for="modal-activity-name" class="form-label">Nome da Atividade (sem número)</label>
+                                        <label for="modal-activity-name" class="form-label">Nome da Atividade *</label>
                                         <input type="text" id="modal-activity-name" class="form-control" required>
                                     </div>
                                 </div>
-                                
                                 <div class="form-grid-2-col">
                                     <div class="form-group">
-                                        <label for="modal-start-date" class="form-label">Data de Início</label>
+                                        <label for="modal-start-date" class="form-label">Data de Início *</label>
                                         <input type="date" id="modal-start-date" class="form-control" required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="modal-duration" class="form-label">Duração (dias)</label>
-                                        <input type="number" id="modal-duration" class="form-control" min="1" placeholder="Ex: 5">
+                                        <label for="modal-end-date" class="form-label">Data de Fim *</label>
+                                        <input type="date" id="modal-end-date" class="form-control" required>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="modal-end-date" class="form-label">Data de Fim (calculada)</label>
-                                    <input type="date" id="modal-end-date" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="modal-dependencies" class="form-label">Depende da Tarefa (Pai)</label>
-                                    <select id="modal-dependencies" class="form-control"></select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="modal-progress" class="form-label">Progresso (%)</label>
-                                    <input type="number" id="modal-progress" class="form-control" min="0" max="100" value="0">
+                                <div class="form-grid-2-col">
+                                    <div class="form-group">
+                                        <label for="modal-dependencies" class="form-label">Depende da Tarefa (Pai)</label>
+                                        <select id="modal-dependencies" class="form-control"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="modal-progress" class="form-label">Progresso (%)</label>
+                                        <input type="number" id="modal-progress" class="form-control" min="0" max="100" value="0">
+                                    </div>
                                 </div>
                                 <div class="gantt-modal-footer">
                                     <button type="button" id="modal-cancel-btn" class="btn btn-outline-form">Cancelar</button>
-                                    <button type="button" id="modal-save-btn" class="btn btn-primary-form">Salvar</button>
+                                    <button type="submit" id="modal-save-btn" class="btn btn-primary-form">Salvar</button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
-
             </main>
         </div>
     </div>
 
     <script type="module">
-        import { app, APP_COLLECTION_ID } from './js/firebase-config.js';
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, getDocs, query, where, orderBy, doc, addDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showToast } from './js/common.js';
+        import { supabaseClient as supabase } from './js/supabase-config.js';
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
         
-        // --- INÍCIO DA CONFIGURAÇÃO E VARIÁVEIS ---
-        let db;
         let ganttData = [];
         let rawActivities = [];
         let currentEmpreendimentoId = null;
@@ -113,22 +107,8 @@
 
         const selectEmpreendimento = document.getElementById('select-empreendimento');
         const addActivityBtn = document.getElementById('add-activity-btn');
-        const ganttPlaceholder = document.getElementById('gantt-placeholder');
-        
         const modal = document.getElementById('activity-modal');
         const modalForm = document.getElementById('gantt-modal-form');
-        const modalTitle = document.getElementById('modal-title');
-        const modalSaveBtn = document.getElementById('modal-save-btn');
-        const modalFields = {
-            id: document.getElementById('modal-activity-id'),
-            name: document.getElementById('modal-activity-name'),
-            stage: document.getElementById('modal-activity-stage'),
-            progress: document.getElementById('modal-progress'),
-            startDate: document.getElementById('modal-start-date'),
-            endDate: document.getElementById('modal-end-date'),
-            duration: document.getElementById('modal-duration'),
-            dependencies: document.getElementById('modal-dependencies')
-        };
         
         const etapasPadrao = [
             "01 - Serviços preliminares e gerais", "02 - Infra-estrutura", "03 - Supra-estrutura",
@@ -139,79 +119,54 @@
             "16 - Instalações de esgoto e águas pluviais", "17 - Louças e metais",
             "18 - Complementos/Incêndio", "19 - Outros serviços"
         ];
-        
-        // --- LÓGICA DO MODAL ---
 
+        // --- INICIALIZAÇÃO DA PÁGINA ---
+        async function initializePage() {
+            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
+            checkAuthAndRedirect((user) => {
+                initializeCommonUI(user); 
+                initializeSidebarToggle();
+                setupEventListeners();
+                populateEtapaDropdown();
+                loadEmpreendimentos();
+                google.charts.load('current', {'packages':['gantt'], 'language': 'pt_BR'});
+                google.charts.setOnLoadCallback(() => {}); // Apenas carrega, não desenha nada ainda
+            });
+        }
+        initializePage();
+
+        // --- LÓGICA DO MODAL ---
         function populateEtapaDropdown() {
-            modalFields.stage.innerHTML = '<option value="">Selecione a Etapa...</option>';
+            const select = document.getElementById('modal-activity-stage');
+            select.innerHTML = '<option value="">Selecione a Etapa...</option>';
             etapasPadrao.forEach(etapa => {
-                const opt = document.createElement('option');
-                opt.value = etapa;
-                opt.textContent = etapa;
-                modalFields.stage.appendChild(opt);
+                select.add(new Option(etapa, etapa));
             });
         }
 
         function populateDependenciesDropdown(currentTaskId = null) {
-            modalFields.dependencies.innerHTML = '<option value="">Nenhuma</option>';
+            const select = document.getElementById('modal-dependencies');
+            select.innerHTML = '<option value="">Nenhuma</option>';
             rawActivities.forEach(activity => {
-                if (activity.id === currentTaskId) return;
-                const opt = document.createElement('option');
-                opt.value = activity.id;
-                opt.textContent = activity.nome;
-                modalFields.dependencies.appendChild(opt);
+                if (activity.id === currentTaskId) return; // Não pode depender de si mesma
+                select.add(new Option(activity.nome, activity.id));
             });
         }
-        
-        function formatDateForInput(date) {
-            const d = new Date(date);
-            d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-            return d.toISOString().split('T')[0];
-        }
 
-        function calculateEndDate() {
-            const startDate = modalFields.startDate.value;
-            const duration = parseInt(modalFields.duration.value, 10);
-            if (startDate && duration > 0) {
-                const start = new Date(startDate);
-                start.setDate(start.getDate() + duration);
-                modalFields.endDate.value = formatDateForInput(start);
-            }
-        }
-
-        function calculateDuration() {
-            const startDate = modalFields.startDate.value;
-            const endDate = modalFields.endDate.value;
-            if (startDate && endDate) {
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                if (end > start) {
-                    const diffTime = Math.abs(end - start);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    modalFields.duration.value = diffDays;
-                } else {
-                    modalFields.duration.value = 0;
-                }
-            }
-        }
-        
         function openModal(activity = null) {
             modalForm.reset();
             populateDependenciesDropdown(activity ? activity.id : null);
             if (activity) {
-                modalTitle.textContent = 'Editar Atividade';
-                modalFields.id.value = activity.id;
-                modalFields.name.value = activity.name.includes(' - ') ? activity.name.substring(activity.name.indexOf(' - ') + 3) : activity.name;
-                modalFields.stage.value = activity.resource;
-                modalFields.progress.value = activity.progress;
-                modalFields.startDate.value = formatDateForInput(activity.startDate);
-                modalFields.endDate.value = formatDateForInput(activity.endDate);
-                modalFields.dependencies.value = activity.dependencies || '';
-                calculateDuration();
+                document.getElementById('modal-title').textContent = 'Editar Atividade';
+                document.getElementById('modal-activity-id').value = activity.id;
+                document.getElementById('modal-activity-name').value = activity.nome;
+                document.getElementById('modal-activity-stage').value = activity.etapa;
+                document.getElementById('modal-start-date').value = activity.dataInicio.split('T')[0];
+                document.getElementById('modal-end-date').value = activity.dataFim.split('T')[0];
+                document.getElementById('modal-progress').value = activity.progresso || 0;
+                document.getElementById('modal-dependencies').value = activity.dependeDe || '';
             } else {
-                modalTitle.textContent = 'Nova Atividade';
-                modalFields.id.value = '';
-                modalFields.progress.value = 0;
+                document.getElementById('modal-title').textContent = 'Nova Atividade';
             }
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('show'), 10);
@@ -222,78 +177,44 @@
             setTimeout(() => modal.style.display = 'none', 300);
         }
 
-        async function saveModalData() {
-            const id = modalFields.id.value;
-            const etapaSelecionada = modalFields.stage.value;
-            let nomeFinal = modalFields.name.value.trim();
-
-            if (!etapaSelecionada || !nomeFinal || !modalFields.startDate.value || !modalFields.endDate.value) {
-                 showToast('error', 'Campos Obrigatórios', 'Preencha Etapa, Nome, Início e Fim.');
-                 return;
-            }
-            
-            if (!id) {
-                const [etapaNumero] = etapaSelecionada.split(' - ');
-                const tarefasNaEtapa = rawActivities.filter(act => act.etapa === etapaSelecionada).length;
-                const novoIndice = tarefasNaEtapa + 1;
-                nomeFinal = `${etapaNumero}.${novoIndice} - ${nomeFinal}`;
-            }
-
+        async function saveModalData(event) {
+            event.preventDefault();
+            const id = document.getElementById('modal-activity-id').value;
             const data = {
-                nome: nomeFinal,
-                etapa: etapaSelecionada,
-                progresso: parseInt(modalFields.progress.value, 10) || 0,
-                dataInicio: Timestamp.fromDate(new Date(modalFields.startDate.value + 'T03:00:00Z')),
-                dataFim: Timestamp.fromDate(new Date(modalFields.endDate.value + 'T03:00:00Z')),
-                dependeDe: modalFields.dependencies.value || null,
-                empreendimentoId: currentEmpreendimentoId
+                empreendimentoId: currentEmpreendimentoId,
+                nome: document.getElementById('modal-activity-name').value.trim(),
+                etapa: document.getElementById('modal-activity-stage').value,
+                dataInicio: document.getElementById('modal-start-date').value,
+                dataFim: document.getElementById('modal-end-date').value,
+                progresso: parseInt(document.getElementById('modal-progress').value, 10) || 0,
+                dependeDe: document.getElementById('modal-dependencies').value || null,
             };
 
-            modalSaveBtn.disabled = true;
-            try {
-                if (id) {
-                    await updateDoc(doc(db, `artifacts/${APP_COLLECTION_ID}/atividades`, id), data);
-                    showToast('success', 'Sucesso', 'Atividade atualizada.');
-                } else {
-                    await addDoc(collection(db, `artifacts/${APP_COLLECTION_ID}/atividades`), data);
-                    showToast('success', 'Sucesso', 'Nova atividade adicionada.');
-                }
+            if (!data.nome || !data.dataInicio || !data.dataFim) {
+                showToast('error', 'Campos Obrigatórios', 'Nome, Início e Fim são obrigatórios.');
+                return;
+            }
+
+            showLoading();
+            let error;
+            if (id) {
+                ({ error } = await supabase.from('atividadesGantt').update(data).eq('id', id));
+            } else {
+                ({ error } = await supabase.from('atividadesGantt').insert(data));
+            }
+            hideLoading();
+
+            if (error) {
+                showToast('error', 'Erro ao Salvar', 'Não foi possível salvar a atividade.');
+                console.error("Erro no Supabase:", error);
+            } else {
+                showToast('success', 'Sucesso!', `Atividade ${id ? 'atualizada' : 'criada'} com sucesso.`);
                 closeModal();
                 loadGanttData(currentEmpreendimentoId);
-            } catch (error) {
-                console.error("Erro ao salvar atividade:", error);
-                showToast('error', 'Erro', 'Não foi possível salvar a atividade.');
-            } finally {
-                modalSaveBtn.disabled = false;
             }
         }
         
-        addActivityBtn.addEventListener('click', () => openModal());
-        document.getElementById('modal-close-btn').addEventListener('click', closeModal);
-        document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-        modalSaveBtn.addEventListener('click', saveModalData);
-        modalFields.startDate.addEventListener('change', calculateDuration);
-        modalFields.endDate.addEventListener('change', calculateDuration);
-        modalFields.duration.addEventListener('input', calculateEndDate);
-        
-        google.charts.load('current', {'packages':['gantt']});
-        google.charts.setOnLoadCallback(initializePage);
-
-        function selectHandler() {
-            const selection = chart.getSelection();
-            if (selection.length > 0) {
-                const rowIndex = selection[0].row;
-                const taskData = {
-                    id: dataTable.getValue(rowIndex, 0), name: dataTable.getValue(rowIndex, 1),
-                    resource: dataTable.getValue(rowIndex, 2), startDate: dataTable.getValue(rowIndex, 3),
-                    endDate: dataTable.getValue(rowIndex, 4), progress: dataTable.getValue(rowIndex, 6),
-                    dependencies: dataTable.getValue(rowIndex, 7),
-                };
-                openModal(taskData);
-            }
-        }
-
+        // --- LÓGICA DO GRÁFICO GANTT ---
         function drawChart() {
             if (ganttData.length === 0) {
                  document.getElementById('gantt_chart_div').innerHTML = `<div class="gantt-placeholder">Nenhuma atividade cadastrada para este empreendimento.</div>`;
@@ -306,22 +227,20 @@
             dataTable.addColumn('string', 'Etapa');
             dataTable.addColumn('date', 'Data de Início');
             dataTable.addColumn('date', 'Data de Fim');
-            dataTable.addColumn('number', 'Duração');
+            dataTable.addColumn('number', 'Duração (dias)');
             dataTable.addColumn('number', 'Porcentagem Concluída');
             dataTable.addColumn('string', 'Dependências');
             dataTable.addRows(ganttData);
 
             const options = {
-                height: ganttData.length * 42 + 50,
+                height: ganttData.length * 42 + 50, // Altura dinâmica
                 gantt: {
                     trackHeight: 40,
                     percentEnabled: true,
                     arrow: { color: '#5e6472', width: 2 },
                     palette: [
                         { "color": "#3b82f6", "dark": "#2563eb", "light": "#dbeafe" },
-                        { "color": "#10b981", "dark": "#059669", "light": "#d1fae5" },
-                        { "color": "#f97316", "dark": "#ea580c", "light": "#ffedd5" },
-                        { "color": "#8b5cf6", "dark": "#7c3aed", "light": "#ede9fe" }
+                        { "color": "#10b981", "dark": "#059669", "light": "#d1fae5" }
                     ]
                 }
             };
@@ -329,99 +248,86 @@
             const chartDiv = document.getElementById('gantt_chart_div');
             chart = new google.visualization.Gantt(chartDiv);
             
-            google.visualization.events.addListener(chart, 'select', selectHandler);
+            google.visualization.events.addListener(chart, 'select', () => {
+                const selection = chart.getSelection();
+                if (selection.length > 0) {
+                    const rowIndex = selection[0].row;
+                    const activityId = dataTable.getValue(rowIndex, 0);
+                    const selectedActivity = rawActivities.find(act => act.id == activityId);
+                    if(selectedActivity) openModal(selectedActivity);
+                }
+            });
+
             chart.draw(dataTable, options);
         }
 
-        // ATUALIZADO: com mais logs de diagnóstico
         async function loadGanttData(empreendimentoId) {
             currentEmpreendimentoId = empreendimentoId;
             addActivityBtn.style.display = 'inline-flex';
             document.getElementById('gantt_chart_div').innerHTML = `<div class="gantt-placeholder">Carregando atividades...</div>`;
             
-            console.log(`[DIAGNÓSTICO] Iniciando busca de atividades para o empreendimento ID: ${empreendimentoId}`);
+            showLoading();
+            const { data, error } = await supabase
+                .from('atividadesGantt')
+                .select('*')
+                .eq('empreendimentoId', empreendimentoId)
+                .order('dataInicio', { ascending: true });
+            hideLoading();
 
-            const atividadesRef = collection(db, `artifacts/${APP_COLLECTION_ID}/atividades`);
-            const q = query(atividadesRef, where("empreendimentoId", "==", empreendimentoId), orderBy("dataInicio"));
-            
-            try {
-                const snapshot = await getDocs(q);
-                console.log(`[DIAGNÓSTICO] Busca concluída. Encontrados ${snapshot.size} documentos.`);
-
-                rawActivities = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                ganttData = rawActivities.map(d => [
-                    d.id, d.nome, d.etapa || 'Geral',
-                    d.dataInicio.toDate(), d.dataFim.toDate(),
-                    null, d.progresso || 0, d.dependeDe || null
-                ]);
-                
-                console.log('[DIAGNÓSTICO] Dados traduzidos para o formato do Google. Desenhando o gráfico...');
-                drawChart();
-
-            } catch (error) {
-                console.error("[ERRO CRÍTICO] Falha ao carregar atividades do Gantt:", error);
-                const placeholder = document.getElementById('gantt_chart_div');
-                if (error.code === 'failed-precondition') {
-                    placeholder.innerHTML = `<div class="gantt-placeholder error">Ocorreu um erro. O banco de dados precisa de um índice para esta busca.<br>Por favor, verifique o console para o link de criação do índice.</div>`;
-                } else {
-                    placeholder.innerHTML = `<div class="gantt-placeholder error">Ocorreu um erro ao carregar o cronograma.</div>`;
-                }
+            if (error) {
+                showToast('error', 'Erro', 'Falha ao carregar as atividades do cronograma.');
+                console.error(error);
+                return;
             }
+            
+            rawActivities = data;
+            ganttData = rawActivities.map(d => [
+                String(d.id), d.nome, d.etapa || 'Geral',
+                new Date(d.dataInicio + 'T03:00:00'), // Adiciona fuso para evitar problemas de data
+                new Date(d.dataFim + 'T03:00:00'),
+                null, // Duração calculada pelo Google Charts
+                d.progresso || 0,
+                d.dependeDe ? String(d.dependeDe) : null
+            ]);
+            
+            drawChart();
         }
         
-        async function carregarEmpreendimentos() {
-            try {
-                const empreendimentosRef = collection(db, `artifacts/${APP_COLLECTION_ID}/empreendimentos`);
-                const q = query(empreendimentosRef, orderBy("nomeEmpreendimento"));
-                const snapshot = await getDocs(q);
-                selectEmpreendimento.innerHTML = '<option value="">Selecione...</option>';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data && data.nomeEmpreendimento) {
-                        const opt = document.createElement("option");
-                        opt.value = doc.id;
-                        opt.textContent = data.nomeEmpreendimento;
-                        selectEmpreendimento.appendChild(opt);
-                    } else {
-                        console.warn(`Empreendimento com ID ${doc.id} ignorado por não ter o campo 'nomeEmpreendimento'.`);
-                    }
-                });
-            } catch (error) {
-                console.error("Erro ao carregar empreendimentos:", error);
-                selectEmpreendimento.innerHTML = '<option value="">Falha ao carregar</option>';
+        // --- FUNÇÕES DE APOIO E LISTENERS ---
+        async function loadEmpreendimentos() {
+            showLoading();
+            const { data, error } = await supabase.from('empreendimentos').select('id, nomeEmpreendimento').order('nomeEmpreendimento');
+            hideLoading();
+
+            if (error) {
                 showToast('error', 'Erro de Carga', 'Não foi possível carregar os empreendimentos.');
+                return;
             }
+
+            selectEmpreendimento.innerHTML = '<option value="">Selecione...</option>';
+            data.forEach(emp => {
+                selectEmpreendimento.add(new Option(emp.nomeEmpreendimento, emp.id));
+            });
         }
+        
+        function setupEventListeners() {
+            selectEmpreendimento.addEventListener('change', () => {
+                if (selectEmpreendimento.value) {
+                    loadGanttData(selectEmpreendimento.value);
+                } else {
+                    document.getElementById('gantt_chart_div').innerHTML = `<div class="gantt-placeholder">Selecione um empreendimento para ver o cronograma.</div>`;
+                    addActivityBtn.style.display = 'none';
+                }
+            });
 
-        async function initializePage() {
-            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            const auth = getAuth(app);
-            db = getFirestore(app);
-            
-            checkAuthAndRedirect(auth, 'index.html', (user) => {
-                initializeCommonUI(user); 
-                initializeSidebarToggle();
-                populateEtapaDropdown();
-                carregarEmpreendimentos();
+            addActivityBtn.addEventListener('click', () => openModal());
+            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+            document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+            modalForm.addEventListener('submit', saveModalData);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-                selectEmpreendimento.addEventListener('change', () => {
-                     if (selectEmpreendimento.value) {
-                        loadGanttData(selectEmpreendimento.value);
-                    } else {
-                         document.getElementById('gantt_chart_div').innerHTML = `<div class="gantt-placeholder">Selecione um empreendimento para ver o cronograma.</div>`;
-                         addActivityBtn.style.display = 'none';
-                    }
-                });
-
-                let resizeTimer;
-                window.addEventListener('resize', () => {
-                    clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(() => {
-                        if (chart && ganttData.length > 0) {
-                            drawChart();
-                        }
-                    }, 250);
-                });
+            window.addEventListener('resize', () => {
+                 if (chart && ganttData.length > 0) drawChart();
             });
         }
     </script>

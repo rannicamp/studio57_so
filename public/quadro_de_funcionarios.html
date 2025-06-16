@@ -6,7 +6,6 @@
     <title>Quadro de Funcionários - Studio 57</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="page-wrapper">
@@ -29,6 +28,7 @@
                 <div class="table-container">
                     <div class="table-actions">
                         <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nome, cargo ou CPF...">
+                        <a href="registro_funcionario.html" class="btn btn-primary-form"><i class="fas fa-plus"></i> Adicionar Funcionário</a>
                     </div>
                     <div class="table-wrapper">
                         <table class="data-table">
@@ -86,17 +86,16 @@
                 .select('*')
                 .order('nomeCompleto', { ascending: true });
 
+            hideLoading();
             if (error) {
                 console.error("Erro ao buscar funcionários:", error);
                 tableBody.innerHTML = '<tr><td colspan="7" class="error">Falha ao carregar dados.</td></tr>';
                 showToast('error', 'Erro', 'Não foi possível carregar os funcionários.');
-                hideLoading();
                 return;
             }
 
             allFuncionarios = data;
             renderTable(allFuncionarios);
-            hideLoading();
         }
 
         function renderTable(funcionarios) {
@@ -108,6 +107,7 @@
 
             funcionarios.forEach(func => {
                 const row = document.createElement('tr');
+                // Link de edição corrigido para apontar para registro_funcionario.html com o ID
                 row.innerHTML = `
                     <td>
                         <img src="${func.fotoFuncionarioUrl || 'https://via.placeholder.com/40'}" alt="Foto de ${func.nomeCompleto}" class="table-photo">
@@ -119,17 +119,18 @@
                     <td data-label="CPF">${func.cpf}</td>
                     <td data-label="Ações">
                         <div class="table-action-buttons">
-                            <button class="btn-action btn-edit" title="Editar"><i class="fas fa-pencil-alt"></i></button>
-                            <button class="btn-action btn-delete" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+                            <a href="registro_funcionario.html?id=${func.id}" class="btn-action btn-edit" title="Editar"><i class="fas fa-pencil-alt"></i></a>
+                            <button class="btn-action btn-delete" data-id="${func.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </td>
                 `;
 
                 // Adiciona evento de exclusão
-                const deleteButton = row.querySelector('.btn-delete');
-                deleteButton.addEventListener('click', () => {
-                    if (confirm(`Tem certeza que deseja excluir ${func.nomeCompleto}? Esta ação é irreversível.`)) {
-                        deleteFuncionario(func.id, func);
+                row.querySelector('.btn-delete').addEventListener('click', (e) => {
+                    const funcId = e.currentTarget.dataset.id;
+                    const funcionario = allFuncionarios.find(f => f.id == funcId);
+                    if (confirm(`Tem certeza que deseja excluir ${funcionario.nomeCompleto}? Esta ação é irreversível.`)) {
+                        deleteFuncionario(funcId, funcionario);
                     }
                 });
 
@@ -140,28 +141,27 @@
         async function deleteFuncionario(id, funcionario) {
             showLoading();
             try {
-                // 1. Coletar todos os caminhos de arquivos a serem excluídos
+                // 1. Coleta todos os caminhos de arquivos a serem excluídos no Storage
                 const filePaths = [
                     funcionario.fotoFuncionarioPath,
                     funcionario.contratoFuncionarioPath,
                     funcionario.identidadeFuncionarioPath,
                     funcionario.asoFuncionarioPath
-                ].filter(path => path); // Filtra para remover nulos ou vazios
+                ].filter(Boolean); // Filtra para remover nulos ou vazios
 
                 // 2. Se houver arquivos, excluí-los do Storage
                 if (filePaths.length > 0) {
-                    const { data, error: storageError } = await supabase.storage
-                        .from('documentosfuncionarios') // NOME CORRIGIDO
+                    const { error: storageError } = await supabase.storage
+                        .from('documentosfuncionarios')
                         .remove(filePaths);
                     
                     if (storageError) {
-                        // Mesmo com erro, tenta apagar do banco de dados, mas avisa o usuário
-                        console.warn("Erro ao deletar arquivos do storage:", storageError);
-                        showToast('warning', 'Aviso', 'Não foi possível remover todos os arquivos, mas o registro será excluído.');
+                        console.warn("Aviso: erro ao deletar arquivos do storage:", storageError);
+                        showToast('warning', 'Aviso', 'Não foi possível remover os arquivos, mas o registro será excluído.');
                     }
                 }
 
-                // 3. Excluir o registro do banco de dados
+                // 3. Excluir o registro do banco de dados (tabela 'funcionario')
                 const { error: dbError } = await supabase
                     .from('funcionario')
                     .delete()
@@ -182,7 +182,7 @@
         
         // Lógica de busca
         searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
+            const searchTerm = e.target.value.toLowerCase().trim();
             const filteredFuncionarios = allFuncionarios.filter(func => {
                 return (
                     func.nomeCompleto.toLowerCase().includes(searchTerm) ||

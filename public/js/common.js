@@ -22,23 +22,41 @@ export async function loadHTMLComponent(elementId, url) {
 }
 
 /**
- * Verifica se o usuário está logado. Se não estiver, redireciona para a página de login.
- * Se estiver logado e em uma página de autenticação (login/registro), redireciona para o dashboard.
- * @param {function} onAuthenticated - Uma função para ser executada se o usuário estiver autenticado.
+ * Verifica se o usuário está logado. Redireciona conforme necessário.
+ * Se uma função onAuthenticated for passada, ela é executada com os dados do usuário.
+ * @param {function} [onAuthenticated] - Função opcional a ser executada se o usuário estiver autenticado.
  */
 export async function checkAuthAndRedirect(onAuthenticated) {
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
-    const isAuthPage = ['/index.html', '/register.html', '/forgot_password.html', '/', '/public/', '/public/index.html'].includes(window.location.pathname);
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+        console.error("Erro ao obter sessão:", error);
+        return;
+    }
 
-    if (!user && !isAuthPage) {
-        window.location.href = '/index.html';
-    } else if (user && isAuthPage) {
-        window.location.href = '/dashboard.html';
-    } else if (user && typeof onAuthenticated === 'function') {
-        onAuthenticated(user);
-    } else if (!user && isAuthPage && typeof onAuthenticated === 'function') {
-        onAuthenticated(null); // Permite executar algo nas páginas de auth, se necessário
+    const user = session?.user;
+    const isAuthPage = window.location.pathname.endsWith('index.html') ||
+                       window.location.pathname.endsWith('register.html') ||
+                       window.location.pathname.endsWith('forgot_password.html') ||
+                       window.location.pathname === '/';
+
+    if (user) {
+        // Usuário está logado
+        if (isAuthPage) {
+            // Se está logado e em uma página de autenticação, vai para o dashboard
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        // Se está logado e em uma página protegida, executa o callback
+        if (typeof onAuthenticated === 'function') {
+            onAuthenticated(user);
+        }
+    } else {
+        // Usuário não está logado
+        if (!isAuthPage) {
+            // Se não está logado e tenta acessar uma página protegida, vai para o login
+            window.location.href = 'index.html';
+        }
     }
 }
 
@@ -73,28 +91,46 @@ export function initializeCommonUI(user) {
     }
 
     if (currentDatetimeDiv) {
-        setInterval(() => {
-            currentDatetimeDiv.textContent = new Date().toLocaleString('pt-BR');
+        // Limpa qualquer intervalo anterior para evitar múltiplos timers
+        if (window.datetimeInterval) {
+            clearInterval(window.datetimeInterval);
+        }
+        // Inicia um novo intervalo e armazena sua referência
+        window.datetimeInterval = setInterval(() => {
+            currentDatetimeDiv.textContent = new Date().toLocaleString('pt-BR', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
         }, 1000);
     }
 
-    // Adiciona o evento de clique aos botões de logout
-    document.querySelectorAll('#logout-button-header, #logout-button-sidebar').forEach(btn => {
-        if(btn) {
-            // Remove qualquer evento antigo para evitar duplicação
-            btn.replaceWith(btn.cloneNode(true));
+    // Adiciona o evento de clique aos botões de logout de forma segura
+    const setupLogoutButtons = () => {
+        const headerButton = document.getElementById('logout-button-header');
+        const sidebarButton = document.getElementById('logout-button-sidebar');
+
+        if (headerButton) {
+            headerButton.removeEventListener('click', handleLogout); // Remove listener antigo
+            headerButton.addEventListener('click', handleLogout); // Adiciona novo
         }
-    });
-     document.querySelectorAll('#logout-button-header, #logout-button-sidebar').forEach(btn => {
-        if(btn) btn.addEventListener('click', handleLogout);
-    });
+        if (sidebarButton) {
+            sidebarButton.removeEventListener('click', handleLogout); // Remove listener antigo
+            sidebarButton.addEventListener('click', handleLogout); // Adiciona novo
+        }
+    };
+    
+    // O componente da sidebar pode demorar um pouco para carregar,
+    // então verificamos repetidamente por um curto período.
+    setTimeout(setupLogoutButtons, 100);
+    setTimeout(setupLogoutButtons, 500);
 }
+
 
 /**
  * Controla a funcionalidade de recolher/expandir a barra lateral.
  */
 export function initializeSidebarToggle() {
-    const sidebar = document.getElementById('sidebar-placeholder');
+    const sidebar = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('sidebar-toggle-btn');
     const mainContent = document.querySelector('.main-content-area-wrapper');
 
@@ -110,8 +146,15 @@ export function initializeSidebarToggle() {
 
 /** Mostra o ícone de carregamento (spinner) */
 export function showLoading() {
-    const spinner = document.getElementById('loadingSpinner');
-    if (spinner) spinner.style.display = 'flex';
+    let spinner = document.getElementById('loadingSpinner');
+    if (!spinner) {
+        spinner = document.createElement('div');
+        spinner.className = 'loading-overlay';
+        spinner.id = 'loadingSpinner';
+        spinner.innerHTML = '<div class="spinner"></div>';
+        document.body.appendChild(spinner);
+    }
+    spinner.style.display = 'flex';
 }
 
 /** Esconde o ícone de carregamento (spinner) */
@@ -127,8 +170,13 @@ export function hideLoading() {
  * @param {string} message - A mensagem da notificação.
  */
 export function showToast(type, title, message) {
-    const container = document.getElementById('toastContainer');
-    if (!container) return;
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    };
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
@@ -151,14 +199,18 @@ export function showToast(type, title, message) {
 
     container.appendChild(toast);
 
-    setTimeout(() => toast.classList.add('show'), 100);
+    // Força o navegador a aplicar a classe inicial antes de adicionar a classe 'show'
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
 
     const closeBtn = toast.querySelector('.toast-close');
     const removeToast = () => {
         toast.classList.remove('show');
         toast.addEventListener('transitionend', () => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
+            // Verifica se o toast ainda está no DOM antes de tentar remover
+            if (toast.parentNode === container) {
+                container.removeChild(toast);
             }
         });
     };

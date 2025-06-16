@@ -12,6 +12,7 @@
         <div id="sidebar-placeholder"></div>
         <div class="main-content-area-wrapper">
             <header class="main-header">
+                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
                 <h1 id="page-title-header">Dashboard</h1>
                 <div class="header-user-info">
                     <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
@@ -37,7 +38,7 @@
                         <h4>Diário de Obra</h4>
                         <p class="card-description">Último Registro: <strong id="card-diario-data">--/--/----</strong></p>
                         <p class="card-description">Clima: <strong id="card-diario-clima">--</strong></p>
-                        <a href="diariodeobras.html" class="card-link">Ver Diários <i class="fas fa-arrow-right text-xs ml-1"></i></a>
+                        <a href="lista-rdo.html" class="card-link">Ver Diários <i class="fas fa-arrow-right text-xs ml-1"></i></a>
                     </div>
                     <div class="dashboard-card">
                         <h4>Orçamentos</h4>
@@ -49,46 +50,28 @@
             </main>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/supabase-config.js"></script>
-    <script type="module" src="js/auth.js"></script>
+
     <script type="module">
-        // Importa suas funções comuns. Certifique-se que estas funções (loadHTMLComponent, initializeCommonUI, initializeSidebarToggle)
-        // estejam adaptadas para não dependerem do Firebase diretamente para autenticação, mas sim do Supabase
-        // ou de lógica que checkAuthAndRedirect já trata.
-        import { initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
+        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle } from './js/common.js';
 
         async function initializePage() {
-            // Carrega a sidebar. Certifique-se de que 'sidebar.html' exista e seja acessível.
+            // Carrega a sidebar primeiro
             await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
             
-            // A verificação de autenticação e redirecionamento agora é feita principalmente via auth.js
-            // ou você pode chamar diretamente do supabaseClient se precisar de lógica mais específica aqui.
-            // Para simplificar, vou assumir que auth.js já cuida da proteção básica da página.
-            
-            // Aqui você pode adicionar lógica para carregar os dados do usuário logado do Supabase
-            // e atualizar o "Usuário: Carregando..." e "current-datetime".
-            // Por exemplo:
-            // import { supabaseClient } from './js/supabase-config.js';
-            // const { data: { user } } = await supabaseClient.auth.getUser();
-            // if (user) {
-            //     document.getElementById('user-info').querySelector('span').textContent = user.email; // Ou user.user_metadata.full_name
-            // }
+            // Verifica a autenticação e, se o usuário estiver logado, executa o restante da inicialização
+            checkAuthAndRedirect((user) => {
+                // Inicializa a UI comum (cabeçalho, etc.) com os dados do usuário
+                initializeCommonUI(user);
+                
+                // Inicializa o botão de recolher/expandir a sidebar
+                initializeSidebarToggle();
 
-            initializeCommonUI(); // Adapte esta função para usar dados do Supabase
-            initializeSidebarToggle(); // Se esta função interagir com o estado de autenticação, adapte-a.
+                // Aqui você pode adicionar a lógica para carregar os dados do dashboard
+                // Por exemplo: loadDashboardData(user);
+            });
         }
-        initializePage();
 
-        // Adiciona um listener para o botão de logout no cabeçalho
-        document.getElementById('logout-button-header').addEventListener('click', async () => {
-            const { error } = await supabaseClient.auth.signOut();
-            if (error) {
-                console.error('Erro ao fazer logout:', error.message);
-            } else {
-                window.location.href = 'index.html'; // Redireciona para a página de login
-            }
-        });
+        initializePage();
     </script>
 </body>
 </html>
