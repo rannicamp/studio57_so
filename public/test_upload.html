@@ -3,122 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste de Upload Firebase Storage</title>
-    
-    <script type="module" src="./js/firebase-config.js"></script>
-
+    <title>Página de Teste de Upload</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        #progress-container { width: 100%; background-color: #f0f0f0; border-radius: 4px; margin-top: 10px; }
-        #progress-bar { width: 0%; background-color: #4CAF50; height: 20px; text-align: center; line-height: 20px; color: white; border-radius: 4px; transition: width 0.3s ease; }
-        #status, #downloadUrl { margin-top: 10px; padding: 8px; border: 1px solid #eee; background-color: #f9f9f9; }
-        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px; }
-        button:hover { background-color: #0056b3; }
-        input[type="file"] { padding: 8px; }
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .message-box {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #e74c3c; /* Vermelho para indicar algo que mudou/não funciona mais */
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-    <h1>Teste de Upload para Firebase Storage</h1>
-    <p><strong>Importante:</strong> Para que este teste funcione com as regras de segurança atuais (`allow read, write: if request.auth != null;`), você precisa estar logado na sua aplicação principal (ex: dashboard.html) em outra aba deste mesmo navegador. Isso garante que o contexto de autenticação seja enviado com a solicitação de upload.</p>
-
-    <input type="file" id="fileInput">
-    <button id="uploadButton">Fazer Upload</button>
-
-    <div id="status">Nenhum arquivo selecionado.</div>
-    <div id="progress-container">
-        <div id="progress-bar">0%</div>
+    <div class="message-box">
+        <h1>Funcionalidade de Teste de Upload</h1>
+        <p>Esta página foi originalmente criada para testar uploads com o Firebase Storage.</p>
+        <p>Como o projeto agora utiliza o **Supabase** como serviço de banco de dados e armazenamento, esta funcionalidade precisa ser reimplementada e adaptada para o Supabase Storage.</p>
+        <p>Por favor, consulte o plano de ação para os próximos passos no desenvolvimento do sistema.</p>
+        <p>Você pode voltar para o <a href="./dashboard.html">Dashboard</a> ou continuar o desenvolvimento.</p>
     </div>
-    <div id="downloadUrl"></div>
-
-    <script type="module">
-        import { app } from './js/firebase-config.js'; //
-        // O getAuth é importado mas não usado diretamente para login nesta página de teste simples.
-        // É para lembrar que a autenticação é relevante para as regras do Storage.
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"; 
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-        const storage = getStorage(app);
-        const auth = getAuth(app); // Instância do Auth para referência, se necessário
-        
-        const fileInput = document.getElementById('fileInput');
-        const uploadButton = document.getElementById('uploadButton');
-        const statusDiv = document.getElementById('status');
-        const progressBar = document.getElementById('progress-bar');
-        const downloadUrlDiv = document.getElementById('downloadUrl');
-
-        let selectedFile = null;
-
-        fileInput.addEventListener('change', (e) => {
-            selectedFile = e.target.files[0];
-            if (selectedFile) {
-                statusDiv.textContent = `Arquivo selecionado: ${selectedFile.name}`;
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-                downloadUrlDiv.textContent = '';
-            } else {
-                statusDiv.textContent = 'Nenhum arquivo selecionado.';
-            }
-        });
-
-        uploadButton.addEventListener('click', () => {
-            if (!selectedFile) {
-                statusDiv.textContent = 'Por favor, selecione um arquivo primeiro!';
-                return;
-            }
-
-            // Verificando se o usuário está "logado" (o navegador deve ter o token do app principal)
-            // Esta é uma verificação simples, o Firebase SDK lida com o envio do token.
-            if (!auth.currentUser && firebase.auth().currentUser === null) { // Fallback para SDKs mais antigos se necessário, mas o primeiro é o v9+
-                 // Idealmente, em um app real, você teria um fluxo de login aqui se não estivesse logado.
-                 // Para este teste, confiamos que o usuário está logado no app principal.
-                 console.warn("Usuário pode não estar autenticado. O upload pode falhar devido às regras de segurança.");
-            }
-
-
-            // Caminho no Storage: test_uploads/NOME_DO_ARQUIVO_COM_TIMESTAMP
-            const fileNameInStorage = `${Date.now()}_${selectedFile.name}`; 
-            const storageRef = ref(storage, `test_uploads/${fileNameInStorage}`);
-
-            statusDiv.textContent = 'Iniciando upload...';
-            progressBar.style.width = '0%';
-            progressBar.textContent = '0%';
-            downloadUrlDiv.textContent = '';
-            uploadButton.disabled = true;
-
-            const uploadTask = uploadBytesResumable(storageRef, selectedFile);
-
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    progressBar.style.width = progress + '%';
-                    progressBar.textContent = Math.round(progress) + '%';
-                    statusDiv.textContent = `Enviando: ${selectedFile.name}... ${Math.round(progress)}%`;
-                },
-                (error) => {
-                    console.error('Erro no upload:', error);
-                    statusDiv.textContent = `Erro no upload: ${error.code} (${error.message})`;
-                    progressBar.style.width = '0%';
-                    progressBar.textContent = 'Falha';
-                    uploadButton.disabled = false;
-                },
-                async () => {
-                    statusDiv.textContent = `Upload de "${selectedFile.name}" (como "${fileNameInStorage}") completo!`;
-                    progressBar.textContent = '100%';
-                    uploadButton.disabled = false;
-                    try {
-                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                        downloadUrlDiv.innerHTML = `Arquivo disponível em: <a href="${downloadURL}" target="_blank">${downloadURL}</a>`;
-                        console.log('Arquivo enviado para:', downloadURL);
-                    } catch (error) {
-                        console.error('Erro ao obter URL de download:', error);
-                        downloadUrlDiv.textContent = 'Erro ao obter URL de download.';
-                    }
-                    // Limpar para próximo upload
-                    fileInput.value = null; // Reseta o campo de arquivo
-                    selectedFile = null;
-                }
-            );
-        });
-    </script>
 </body>
 </html>
