@@ -3,364 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar RDO - Studio 57</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Novo RDO - Studio 57</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div class="page-wrapper">
-        <div id="sidebar-placeholder"></div>
-        <div class="main-content-area-wrapper">
-            <header class="main-header">
-                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
-                <h1 id="page-title-header">Relatório Diário de Obra</h1>
-                <div class="header-user-info">
-                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
-                    <div id="current-datetime">--/--/---- --:--:--</div>
-                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+    <div id="sidebar-placeholder"></div>
+
+    <div class="main-content-area-wrapper">
+        <header class="main-header">
+             <div class="header-right">
+                <div class="datetime-display">
+                    <i class="far fa-calendar-alt"></i>
+                    <span id="current-datetime">--/--/---- --:--</span>
                 </div>
-            </header>
+                <div id="user-info" class="user-info">
+                    <i class="far fa-user-circle"></i>
+                    <span>Carregando...</span>
+                </div>
+                <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <h1 class="page-title" id="pageTitle">Novo Relatório Diário de Obra</h1>
             
-            <main class="content-scrollable">
-                <div class="toast-container" id="toastContainer"></div>
-                <div id="form-container-rdo" class="form-container" style="display: none;">
-                    <form id="rdoForm" class="form-body">
-                         <div class="form-section">
-                            <h3 class="form-section-title">Informações Gerais</h3>
-                            <div class="form-grid-2-col">
-                                <div class="form-group">
-                                    <label class="form-label">Empreendimento</label>
-                                    <p id="empreendimento-nome" class="form-static-text"></p>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Data do Relatório</label>
-                                    <p id="rdo-data" class="form-static-text"></p>
-                                </div>
-                            </div>
+            <form id="rdoForm">
+                <div class="card">
+                    <h2 class="card-header">Informações Gerais</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="empreendimentoId">Empreendimento</label>
+                            <select id="empreendimentoId" class="form-control" required>
+                                <option value="">Selecione um empreendimento</option>
+                            </select>
                         </div>
-
-                        <div class="form-section">
-                            <h3 class="form-section-title">Condições Gerais</h3>
-                            <div class="form-grid-2-col">
-                                <div class="form-group">
-                                    <label class="form-label">Condições Climáticas</label>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" data-field="condicoesClimaticas" name="bom" /> Bom</label>
-                                        <label><input type="checkbox" data-field="condicoesClimaticas" name="chuvoso" /> Chuvoso</label>
-                                        <label><input type="checkbox" data-field="condicoesClimaticas" name="nublado" /> Nublado</label>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Condições de Trabalho</label>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" data-field="condicoesTrabalho" name="bom" /> Bom</label>
-                                        <label><input type="checkbox" data-field="condicoesTrabalho" name="improdutivo" /> Improdutivo</label>
-                                        <label><input type="checkbox" data-field="condicoesTrabalho" name="perigoso" /> Perigoso</label>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label for="dataRelatorio">Data do Relatório</label>
+                            <input type="date" id="dataRelatorio" class="form-control" required>
                         </div>
-
-                        <div class="form-section">
-                            <h3 class="form-section-title">Andamento das Atividades</h3>
-                            <div id="atividades-container"></div>
-                            <button type="button" id="add-atividade-btn" class="btn-outline-form btn-sm">Adicionar Atividade</button>
-                        </div>
-
-                        <div class="form-section">
-                            <h3 class="form-section-title">Ocorrências, Observações e Comentários</h3>
-                            <div id="ocorrencias-container"></div>
-                             <button type="button" id="add-ocorrencia-btn" class="btn-outline-form btn-sm">Adicionar Ocorrência</button>
-                        </div>
-                        
-                        <div class="form-section">
-                            <h3 class="form-section-title">Registro Fotográfico</h3>
-                            <div class="form-group">
-                                <label for="foto-upload" class="form-label">Adicionar Nova Foto</label>
-                                <input type="file" id="foto-upload" class="form-control-file" accept="image/*" multiple>
-                            </div>
-                            <div id="fotos-gallery" class="fotos-gallery"></div>
-                        </div>
-
-                    </form>
+                    </div>
                 </div>
 
-                <div class="loading-overlay" id="loadingSpinner" style="display: flex;">
-                    <div class="spinner"></div>
+                <div class="card">
+                    <h2 class="card-header">Condições do Dia</h2>
+                     <div class="form-grid">
+                        <div class="form-group">
+                            <label>Condições Climáticas</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" name="condicoesClimaticas" value="Ensolarado"> Ensolarado</label>
+                                <label><input type="checkbox" name="condicoesClimaticas" value="Nublado"> Nublado</label>
+                                <label><input type="checkbox" name="condicoesClimaticas" value="Chuvoso"> Chuvoso</label>
+                                <label><input type="checkbox" name="condicoesClimaticas" value="Vento Forte"> Vento Forte</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Condições de Trabalho</label>
+                             <div class="checkbox-group">
+                                <label><input type="checkbox" name="condicoesTrabalho" value="Normais"> Normais</label>
+                                <label><input type="checkbox" name="condicoesTrabalho" value="Adversas"> Adversas</label>
+                                <label><input type="checkbox" name="condicoesTrabalho" value="Interrompidas"> Interrompidas</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </main>
-        </div>
+
+                <div class="card">
+                    <h2 class="card-header">Mão de Obra</h2>
+                    <div id="maoDeObraContainer">
+                        </div>
+                    <button type="button" id="addMaoDeObra" class="btn btn-secondary" style="margin-top: 15px;">Adicionar Mão de Obra</button>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-header">Andamento das Atividades</h2>
+                     <div id="statusAtividadesContainer">
+                        </div>
+                    <button type="button" id="addAtividade" class="btn btn-secondary" style="margin-top: 15px;">Adicionar Atividade</button>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-header">Ocorrências e Observações</h2>
+                    <div id="ocorrenciasContainer">
+                         </div>
+                    <button type="button" id="addOcorrencia" class="btn btn-secondary" style="margin-top: 15px;">Adicionar Ocorrência</button>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-header">Fotos do Dia</h2>
+                    <div class="form-group">
+                        <label for="fotos">Adicionar Fotos (múltiplas)</label>
+                        <input type="file" id="fotos" class="form-control" accept="image/*" multiple>
+                    </div>
+                    <div id="fotos-preview"></div>
+                </div>
+
+                <div class="card">
+                     <h2 class="card-header">Responsável pelo Relatório</h2>
+                     <div class="form-grid">
+                        <div class="form-group">
+                            <label for="responsavelNome">Nome</label>
+                            <input type="text" id="responsavelNome" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="responsavelCargo">Cargo</label>
+                            <input type="text" id="responsavelCargo" class="form-control">
+                        </div>
+                     </div>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar RDO</button>
+                </div>
+            </form>
+        </main>
     </div>
-    
-    <script type="module">
-        import { supabaseClient as supabase } from './js/supabase-config.js';
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
 
-        let rdoData = {};
-        let rdoId = null;
-        let empreendimentoId = null;
-        let dataRelatorio = null;
-        let saveTimeout;
-        let isDirty = false; // Flag para marcar se há mudanças não salvas
-
-        // --- INICIALIZAÇÃO DA PÁGINA ---
-        async function initializePage() {
-            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            checkAuthAndRedirect((user) => {
-                initializeCommonUI(user);
-                initializeSidebarToggle();
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                rdoId = urlParams.get('rdoId');
-                empreendimentoId = urlParams.get('empreendimentoId');
-                dataRelatorio = urlParams.get('data');
-                
-                if (rdoId) {
-                    loadRdoById(rdoId);
-                } else if (empreendimentoId && dataRelatorio) {
-                    findOrCreateRdo(empreendimentoId, dataRelatorio, user);
-                } else {
-                    showToast('error', 'Erro', 'Parâmetros inválidos para carregar o RDO.');
-                    hideLoading();
-                }
-            });
-        }
-        initializePage();
-
-        // --- CARREGAMENTO E CRIAÇÃO DO RDO ---
-        async function loadRdoById(id) {
-            const { data, error } = await supabase.from('rdo').select('*, empreendimentos(nomeEmpreendimento)').eq('id', id).single();
-            if (error) {
-                showToast('error', 'Erro', 'Não foi possível carregar o RDO.');
-                console.error(error);
-                hideLoading();
-                return;
-            }
-            rdoData = data;
-            rdoId = data.id;
-            empreendimentoId = data.empreendimentoId;
-            populateForm(data);
-        }
-
-        async function findOrCreateRdo(empId, date, user) {
-            // Verifica se já existe um RDO para essa data e empreendimento
-            const { data: existing, error: findError } = await supabase.from('rdo')
-                .select('id').eq('empreendimentoId', empId).eq('dataRelatorio', date).maybeSingle();
-
-            if (findError) {
-                 showToast('error', 'Erro', 'Falha ao verificar RDO existente.');
-                 console.error(findError);
-                 hideLoading();
-                 return;
-            }
-
-            if (existing) {
-                // Já existe, carrega
-                loadRdoById(existing.id);
-            } else {
-                // Não existe, cria um novo
-                const { data: empData, error: empError } = await supabase.from('empreendimentos').select('nomeEmpreendimento').eq('id', empId).single();
-                 if (empError) {
-                     showToast('error', 'Erro', 'Não foi possível encontrar o empreendimento.');
-                     hideLoading();
-                     return;
-                 }
-
-                const newRdo = {
-                    empreendimentoId: empId,
-                    empreendimentoNome: empData.nomeEmpreendimento,
-                    dataRelatorio: date,
-                    responsavelRdo: { nome: user.email, id: user.id },
-                    condicoesClimaticas: {}, condicoesTrabalho: {}, statusAtividades: [], ocorrencias: [], fotos: []
-                };
-                
-                const { data: created, error: createError } = await supabase.from('rdo').insert(newRdo).select().single();
-                if (createError) {
-                    showToast('error', 'Erro', 'Não foi possível criar o novo RDO.');
-                    console.error(createError);
-                    hideLoading();
-                    return;
-                }
-                rdoData = created;
-                rdoId = created.id;
-                populateForm(created);
-            }
-        }
-        
-        // --- PREENCHIMENTO E LÓGICA DO FORMULÁRIO ---
-        function populateForm(data) {
-            document.getElementById('empreendimento-nome').textContent = data.empreendimentoNome || data.empreendimentos.nomeEmpreendimento;
-            document.getElementById('rdo-data').textContent = new Date(data.dataRelatorio + 'T03:00:00Z').toLocaleDateString('pt-BR');
-
-            // Preenche checkboxes
-            ['condicoesClimaticas', 'condicoesTrabalho'].forEach(group => {
-                if (data[group]) {
-                    Object.keys(data[group]).forEach(key => {
-                        const input = document.querySelector(`input[data-field="${group}"][name="${key}"]`);
-                        if (input) input.checked = data[group][key];
-                    });
-                }
-            });
-            
-            // Preenche atividades e ocorrências
-            data.statusAtividades?.forEach(item => addDynamicRow('atividades', item));
-            data.ocorrencias?.forEach(item => addDynamicRow('ocorrencias', item));
-            
-            // Preenche galeria de fotos
-            renderGallery(data.fotos || []);
-
-            document.getElementById('form-container-rdo').style.display = 'block';
-            hideLoading();
-            setupFormListeners();
-        }
-
-        function addDynamicRow(type, item = { descricao: '', status: 'Em andamento' }) {
-            const container = document.getElementById(`${type}-container`);
-            const row = document.createElement('div');
-            row.className = 'dynamic-row';
-            row.innerHTML = `
-                <input type="text" class="form-control" data-type="${type}" data-key="descricao" value="${item.descricao || ''}" placeholder="Descrição">
-                ${type === 'atividades' ? `
-                <select class="form-control" data-type="${type}" data-key="status">
-                    <option value="Em andamento" ${item.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
-                    <option value="Concluído" ${item.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
-                    <option value="Paralisado" ${item.status === 'Paralisado' ? 'selected' : ''}>Paralisado</option>
-                </select>
-                ` : ''}
-                <button type="button" class="btn-action-row btn-delete-row"><i class="fas fa-trash-alt"></i></button>
-            `;
-            container.appendChild(row);
-            row.querySelector('.btn-delete-row').addEventListener('click', () => {
-                row.remove();
-                markAsDirty();
-            });
-        }
-
-        function renderGallery(fotos) {
-            const gallery = document.getElementById('fotos-gallery');
-            gallery.innerHTML = '';
-            (fotos || []).forEach((foto, index) => {
-                const imgContainer = document.createElement('div');
-                imgContainer.className = 'foto-item';
-                imgContainer.innerHTML = `
-                    <img src="${foto.url}" alt="Foto RDO">
-                    <button class="btn-delete-foto" data-path="${foto.path}" data-index="${index}">&times;</button>
-                `;
-                gallery.appendChild(imgContainer);
-            });
-            // Adicionar listeners aos novos botões de deletar
-            document.querySelectorAll('.btn-delete-foto').forEach(btn => {
-                btn.addEventListener('click', handleDeleteFoto);
-            });
-        }
-        
-        async function handleDeleteFoto(e) {
-            const path = e.currentTarget.dataset.path;
-            const index = parseInt(e.currentTarget.dataset.index, 10);
-            if (confirm("Tem certeza que deseja excluir esta foto?")) {
-                showLoading();
-                // Remove do storage
-                const { error: storageError } = await supabase.storage.from('fotos-rdo').remove([path]);
-                 if (storageError) {
-                    showToast('error', 'Erro', 'Falha ao remover a foto do armazenamento.');
-                    console.error(storageError);
-                    hideLoading();
-                    return;
-                }
-                // Remove do array no banco de dados
-                rdoData.fotos.splice(index, 1);
-                renderGallery(rdoData.fotos);
-                markAsDirty();
-                hideLoading();
-                showToast('success', 'Sucesso', 'Foto removida.');
-            }
-        }
-
-        // --- LÓGICA DE SALVAMENTO (DEBOUNCE) ---
-        function markAsDirty() {
-            isDirty = true;
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(performSave, 5000); // Salva 5s após a última alteração
-            showToast('info', 'Salvando...', 'Suas alterações serão salvas em 5 segundos.');
-        }
-
-        function setupFormListeners() {
-            const form = document.getElementById('rdoForm');
-            form.addEventListener('input', markAsDirty);
-            form.addEventListener('change', markAsDirty); // Para selects e checkboxes
-            document.getElementById('add-atividade-btn').addEventListener('click', () => addDynamicRow('atividades'));
-            document.getElementById('add-ocorrencia-btn').addEventListener('click', () => addDynamicRow('ocorrencias'));
-            document.getElementById('foto-upload').addEventListener('change', handleUploadFotos);
-        }
-
-        async function performSave() {
-            if (!isDirty) return;
-            
-            // Coleta os dados do formulário
-            const updatedData = {
-                condicoesClimaticas: {},
-                condicoesTrabalho: {},
-                statusAtividades: [],
-                ocorrencias: [],
-                fotos: rdoData.fotos // Mantém as fotos existentes
-            };
-
-            document.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
-                updatedData[input.dataset.field][input.name] = true;
-            });
-
-            document.querySelectorAll('#atividades-container .dynamic-row').forEach(row => {
-                const desc = row.querySelector('[data-key="descricao"]').value.trim();
-                const status = row.querySelector('[data-key="status"]').value;
-                if(desc) updatedData.statusAtividades.push({ descricao: desc, status: status });
-            });
-            document.querySelectorAll('#ocorrencias-container .dynamic-row').forEach(row => {
-                 const desc = row.querySelector('[data-key="descricao"]').value.trim();
-                 if(desc) updatedData.ocorrencias.push({ descricao: desc });
-            });
-            
-            updatedData.updatedAt = new Date().toISOString();
-
-            const { error } = await supabase.from('rdo').update(updatedData).eq('id', rdoId);
-
-            if (error) {
-                showToast('error', 'Erro ao Salvar', 'Não foi possível salvar as alterações.');
-                console.error(error);
-            } else {
-                showToast('success', 'Salvo!', 'Alterações salvas com sucesso.');
-                isDirty = false;
-            }
-        }
-        
-        // --- LÓGICA DE UPLOAD DE FOTOS ---
-        async function handleUploadFotos(e) {
-            const files = e.target.files;
-            if (!files.length) return;
-            showLoading();
-
-            const uploadPromises = Array.from(files).map(file => {
-                const filePath = `${empreendimentoId}/${dataRelatorio}/${Date.now()}-${file.name}`;
-                return supabase.storage.from('fotos-rdo').upload(filePath, file);
-            });
-
-            const results = await Promise.all(uploadPromises);
-            
-            for (const result of results) {
-                if (result.error) {
-                    showToast('error', 'Erro de Upload', `Falha no upload de um arquivo: ${result.error.message}`);
-                } else {
-                    const { data: { publicUrl } } = supabase.storage.from('fotos-rdo').getPublicUrl(result.data.path);
-                    if (!rdoData.fotos) rdoData.fotos = [];
-                    rdoData.fotos.push({ url: publicUrl, path: result.data.path });
-                }
-            }
-            
-            renderGallery(rdoData.fotos);
-            markAsDirty(); // Marca para salvar o novo array de fotos
-            hideLoading();
-        }
-
-    </script>
+    <div id="loadingSpinner" style="display: none;"></div>
+    <div id="toastContainer"></div>
+    <script type="module" src="/js/rdo.js"></script>
 </body>
 </html>
