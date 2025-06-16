@@ -1,24 +1,35 @@
-// common.js (CORRIGIDO E COMPLETO)
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from './firebase-config.js';
+// public/js/common.js
 
-const auth = getAuth(app);
+// Importa o cliente supabase
+import { supabase } from './supabase-config.js';
 
 /**
  * Verifica o estado de autenticação do usuário e redireciona se não estiver logado.
  */
-export function checkAuthAndRedirect(auth, redirectUrl, callback = null) {
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            console.log("Usuário não logado, redirecionando para login...");
+export async function checkAuthAndRedirect(redirectUrl, callback = null) {
+    // Pega a sessão atual do usuário no Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+        // Se não houver sessão (usuário não logado), redireciona
+        console.log("Usuário não logado, redirecionando para login...");
+        window.location.href = redirectUrl;
+    } else {
+        // Se houver uma sessão, executa a função de callback com os dados do usuário
+        if (callback) {
+            callback(session.user);
+        }
+    }
+
+    // Fica "escutando" por mudanças no login (ex: usuário fez logout em outra aba)
+    supabase.auth.onAuthStateChange((_event, session) => {
+        if (!session) {
+            console.log("Sessão expirou ou usuário deslogou. Redirecionando...");
             window.location.href = redirectUrl;
-        } else {
-            if (callback) {
-                callback(user);
-            }
         }
     });
 }
+
 
 /**
  * Lógica comum para o cabeçalho e a barra lateral (data/hora, info do usuário, logout, links ativos).
@@ -26,9 +37,8 @@ export function checkAuthAndRedirect(auth, redirectUrl, callback = null) {
 export function initializeCommonUI(user) {
     const userInfoSpan = document.getElementById('user-info')?.querySelector('span');
     const currentDatetimeSpan = document.getElementById('current-datetime');
-    // CORREÇÃO: Adicionado o seletor para o botão de logout da sidebar
     const logoutButtonHeader = document.getElementById('logout-button-header');
-    const logoutButtonSidebar = document.getElementById('logout-button-sidebar'); 
+    const logoutButtonSidebar = document.getElementById('logout-button-sidebar');
     const navLinks = document.querySelectorAll('.sidebar .nav-link');
 
     if (userInfoSpan && user && user.email) {
@@ -47,18 +57,19 @@ export function initializeCommonUI(user) {
 
     const performLogout = async (event) => {
         event.preventDefault();
-        try {
-            await signOut(auth);
-            console.log("Logout bem-sucedido.");
-            window.location.href = 'index.html'; // Redireciona para o login após o logout
-        } catch (error) {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
             console.error("Erro ao fazer logout:", error);
+        } else {
+            // checkAuthAndRedirect fará o redirecionamento automático
+            console.log("Logout bem-sucedido.");
+            window.location.href = 'index.html'; // Garante o redirecionamento
         }
     };
 
     logoutButtonHeader?.addEventListener('click', performLogout);
     logoutButtonSidebar?.addEventListener('click', performLogout);
-    
+
     const currentPath = window.location.pathname.split('/').pop();
     navLinks.forEach(link => {
         const linkHref = link.getAttribute('href');
@@ -67,6 +78,7 @@ export function initializeCommonUI(user) {
         }
     });
 }
+
 
 /**
  * Exibe um spinner de carregamento em tela cheia.
@@ -101,7 +113,7 @@ export function showToast(type, title, message) {
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    
+
     let iconClass = 'fas fa-info-circle';
     if (type === 'success') iconClass = 'fas fa-check-circle';
     if (type === 'error') iconClass = 'fas fa-exclamation-circle';
@@ -131,6 +143,7 @@ export function showToast(type, title, message) {
     });
 }
 
+
 /**
  * Carrega um componente HTML de um arquivo e o injeta em um elemento da página.
  */
@@ -157,10 +170,9 @@ export async function loadHTMLComponent(elementId, filePath) {
  */
 export function initializeSidebarToggle() {
     setTimeout(() => {
-        // CORREÇÃO: Alterado para os IDs corretos de sidebar.html
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('sidebar-toggle-btn');
-        
+
         if (!sidebar || !toggleBtn) {
             console.warn("Elementos da sidebar não encontrados para inicializar o toggle.");
             return;

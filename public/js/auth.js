@@ -1,62 +1,66 @@
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from './firebase-config.js'; 
+// public/js/auth.js
 
-const auth = getAuth(app);
+// Importa o cliente supabase que criamos no arquivo de configuração.
+import { supabase } from './supabase-config.js';
 
-// Nova lógica de login com Firebase
-const actualLoginForm = document.getElementById('login-form-firebase');
-if (actualLoginForm) {
-    actualLoginForm.addEventListener('submit', (e) => {
+// --- LÓGICA DE LOGIN ---
+const loginForm = document.getElementById('login-form-firebase');
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const errorMessageDiv = document.getElementById('error-message-new');
+        errorMessageDiv.style.display = 'none'; // Esconde a mensagem de erro anterior
 
-        signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                const user = userCredential.user;
-                console.log('Usuário logado:', user);
-                window.location.href = 'dashboard.html';
-            })
-            .catch((error) => {
-                console.error('Erro de login:', error.code, error.message);
-                let msg = 'E-mail ou senha incorretos. Tente novamente.';
-                if (error.code === 'auth/network-request-failed') {
-                    msg = 'Erro de conexão. Verifique sua internet.';
-                }
-                errorMessageDiv.textContent = msg;
-                errorMessageDiv.style.display = 'block';
-            });
+        // Tenta fazer o login com o Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            // Se o Supabase retornar um erro, mostra uma mensagem
+            console.error('Erro de login:', error.message);
+            errorMessageDiv.textContent = 'E-mail ou senha incorretos. Tente novamente.';
+            errorMessageDiv.style.display = 'block';
+        } else {
+            // Se o login for bem-sucedido, redireciona para o dashboard
+            console.log('Usuário logado:', data.user);
+            window.location.href = 'dashboard.html';
+        }
     });
 }
 
-// Lógica para a página de recuperação de senha
+// --- LÓGICA DE RECUPERAÇÃO DE SENHA ---
 const resetPasswordForm = document.getElementById('reset-password-form');
 if (resetPasswordForm) {
-    resetPasswordForm.addEventListener('submit', (e) => {
+    resetPasswordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('reset-email').value;
         const messageDiv = document.getElementById('reset-message');
 
-        sendPasswordResetEmail(auth, email)
-            .then(() => {
-                messageDiv.textContent = 'E-mail de redefinição de senha enviado com sucesso!';
-                messageDiv.style.color = 'green';
-                messageDiv.style.display = 'block';
-            })
-            .catch((error) => {
-                console.error('Erro ao enviar e-mail de redefinição:', error);
-                messageDiv.textContent = 'Erro ao enviar e-mail. Verifique o endereço e tente novamente.';
-                messageDiv.style.color = 'red';
-                messageDiv.style.display = 'block';
-            });
+        // Pede ao Supabase para enviar o e-mail de recuperação
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin, // Opcional: para onde redirecionar após a troca de senha
+        });
+
+        if (error) {
+            console.error('Erro ao enviar e-mail de redefinição:', error);
+            messageDiv.textContent = 'Erro ao enviar e-mail. Verifique o endereço e tente novamente.';
+            messageDiv.style.color = 'red';
+        } else {
+            messageDiv.textContent = 'Se o e-mail estiver cadastrado, um link de recuperação foi enviado!';
+            messageDiv.style.color = 'green';
+        }
+        messageDiv.style.display = 'block';
     });
 }
 
-// Lógica para a página de registro
+// --- LÓGICA DE REGISTRO DE NOVO USUÁRIO ---
 const registerForm = document.getElementById('register-form');
 if (registerForm) {
-    registerForm.addEventListener('submit', (e) => {
+    registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('register-email').value;
         const password = document.getElementById('register-password').value;
@@ -69,16 +73,20 @@ if (registerForm) {
             return;
         }
 
-        createUserWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                messageDiv.textContent = 'Usuário registrado com sucesso! Redirecionando para o login...';
-                messageDiv.style.color = 'green';
-                setTimeout(() => window.location.href = 'index.html', 3000);
-            })
-            .catch((error) => {
-                console.error('Erro de registro:', error);
-                messageDiv.textContent = `Erro no registro: ${error.message}`;
-                messageDiv.style.color = 'red';
-            });
+        // Tenta registrar um novo usuário no Supabase
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            console.error('Erro de registro:', error);
+            messageDiv.textContent = `Erro no registro: ${error.message}`;
+            messageDiv.style.color = 'red';
+        } else {
+            messageDiv.textContent = 'Usuário registrado com sucesso! Verifique seu e-mail para confirmação e depois faça o login.';
+            messageDiv.style.color = 'green';
+             // Não redireciona mais automaticamente, o usuário precisa confirmar o e-mail primeiro.
+        }
     });
 }
