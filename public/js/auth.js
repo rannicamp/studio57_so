@@ -1,5 +1,7 @@
 // public/js/auth.js
-import { supabase } from './supabase-config.js';
+
+// CAMINHO CORRIGIDO para a importação
+import { supabase } from '/js/supabase-config.js';
 
 // --- LÓGICA DE LOGIN ---
 const loginForm = document.getElementById('login-form-firebase');
@@ -22,7 +24,7 @@ if (loginForm) {
             errorMessageDiv.style.display = 'block';
         } else {
             console.log('Usuário logado:', data.user);
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard.html'; // Caminho corrigido
         }
     });
 }
@@ -77,7 +79,7 @@ if (registerForm) {
             messageDiv.textContent = `Erro no registro: ${error.message}`;
             messageDiv.style.color = 'red';
         } else {
-            messageDiv.textContent = 'Usuário registrado com sucesso! Verifique seu e-mail para confirmação e depois faça o login.';
+            messageDiv.textContent = 'Usuário registrado! Verifique seu e-mail para confirmação e depois faça o login.';
             messageDiv.style.color = 'green';
         }
     });

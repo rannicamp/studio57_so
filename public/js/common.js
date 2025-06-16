@@ -1,50 +1,32 @@
 // public/js/common.js
 
-// O único import necessário é o do nosso arquivo de configuração.
 import { supabase } from '/js/supabase-config.js';
 
-/**
- * Função dedicada a carregar o menu lateral.
- */
 async function loadSidebar() {
     try {
-        const response = await fetch('/sidebar.html'); // Caminho corrigido com "/"
-        if (!response.ok) {
-            throw new Error(`Erro de rede ao buscar o menu: ${response.statusText}`);
-        }
+        const response = await fetch('/sidebar.html'); 
+        if (!response.ok) throw new Error(`Erro de rede: ${response.statusText}`);
         const sidebarHTML = await response.text();
         const placeholder = document.getElementById('sidebar-placeholder');
-        if (placeholder) {
-            placeholder.innerHTML = sidebarHTML;
-        } else {
-            console.error('Erro: O elemento #sidebar-placeholder não foi encontrado.');
-        }
+        if (placeholder) placeholder.innerHTML = sidebarHTML;
     } catch (error) {
         console.error('Falha crítica ao carregar o menu lateral:', error);
     }
 }
 
-/**
- * Verifica o login, carrega o menu e inicializa a página.
- */
 export async function checkAuthAndRedirect() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-        window.location.href = '/index.html';
+        window.location.href = '/index.html'; // Caminho corrigido
     } else {
         await loadSidebar();
         initializeCommonUI(session.user);
     }
     supabase.auth.onAuthStateChange((_event, session) => {
-        if (!session) {
-            window.location.href = '/index.html';
-        }
+        if (!session) window.location.href = '/index.html'; // Caminho corrigido
     });
 }
 
-/**
- * Adiciona as funcionalidades aos elementos da página.
- */
 export function initializeCommonUI(user) {
     const userInfoSpan = document.getElementById('user-info')?.querySelector('span');
     const logoutButtonHeader = document.getElementById('logout-button-header');
@@ -75,7 +57,6 @@ export function initializeCommonUI(user) {
     updateDateTime();
     setInterval(updateDateTime, 1000);
     
-    // Adiciona "/" ao caminho atual para comparação correta
     const currentPath = window.location.pathname; 
     navLinks.forEach(link => {
         if (link.getAttribute('href') === currentPath) {
