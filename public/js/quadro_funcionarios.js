@@ -1,129 +1,125 @@
-// quadro_funcionarios.js (CORRIGIDO)
-import { collection, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { APP_COLLECTION_ID } from './firebase-config.js';
-import { showLoading, hideLoading, showToast } from './common.js';
+// public/js/quadro_funcionarios.js
 
-let allEmployeesData = [];
-let dbInstance, storageInstance;
+import { supabase } from './supabase-config.js';
+import { checkAuthAndRedirect, showLoading, hideLoading, showToast } from './common.js';
 
-function displayEmployees(employees, db, storage) {
-    const container = document.getElementById('employee-grid-container');
-    const loadingMessage = document.getElementById('loading-message');
+let allEmployees = []; // Guarda a lista completa de funcionários para a busca funcionar
 
-    if (!container) {
-        console.error("Elemento 'employee-grid-container' não encontrado.");
+// Roda o código quando a página terminar de carregar
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuthAndRedirect();
+    
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', filterEmployees);
+
+    await loadEmployees();
+});
+
+
+/**
+ * Busca a lista de todos os funcionários no Supabase.
+ */
+async function loadEmployees() {
+    showLoading('Carregando funcionários...');
+    const { data, error } = await supabase
+        .from('funcionario')
+        .select('*')
+        .order('nomeCompleto', { ascending: true });
+
+    hideLoading();
+    if (error) {
+        console.error('Erro ao carregar funcionários:', error);
+        showToast('error', 'Erro', 'Não foi possível buscar a lista de funcionários.');
         return;
     }
+    allEmployees = data;
+    displayEmployees(allEmployees);
+}
 
-    container.innerHTML = '';
+/**
+ * Exibe os funcionários na tela, criando um card para cada um.
+ * @param {Array<Object>} employees - A lista de funcionários a ser exibida.
+ */
+function displayEmployees(employees) {
+    const grid = document.getElementById('funcionariosGrid');
+    grid.innerHTML = ''; // Limpa a lista antiga
 
     if (employees.length === 0) {
-        if(loadingMessage) {
-            loadingMessage.textContent = 'Nenhum funcionário encontrado.';
-            loadingMessage.style.display = 'block';
-        }
-    } else if (loadingMessage) {
-        loadingMessage.style.display = 'none';
+        grid.innerHTML = '<p>Nenhum funcionário encontrado.</p>';
+        return;
     }
 
     employees.forEach(employee => {
         const card = document.createElement('div');
-        card.className = 'employee-card';
-        const fotoUrl = employee.fotoFuncionarioUrl || employee.fotoUrl;
-        const dataAdmissao = employee.dataAdmissao ? new Date(employee.dataAdmissao.seconds * 1000).toLocaleDateString('pt-BR') : '--';
+        card.className = 'funcionario-card';
+
+        // Converte a data de admissão para o formato brasileiro
+        const dataAdmissao = employee.dataAdmissao 
+            ? new Date(employee.dataAdmissao).toLocaleDateString('pt-BR') 
+            : 'Não informada';
 
         card.innerHTML = `
-            <div class="photo-container">
-                ${fotoUrl ? `<img src="${fotoUrl}" alt="Foto de ${employee.nomeCompleto}">` : '<i class="fas fa-user icon-placeholder"></i>'}
-            </div>
-            <h3>${employee.nomeCompleto || 'Nome não informado'}</h3>
-            <p class="cargo">${employee.cargo || 'Cargo não informado'}</p>
-            <div class="info-item">
-                <i class="fas fa-id-card fa-fw"></i> <span class="info-text"><strong>CPF:</strong> ${employee.cpf || '--'}</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-phone fa-fw"></i> <span class="info-text"><strong>Telefone:</strong> ${employee.telefone || '--'}</span>
-            </div>
-             <div class="info-item">
-                <i class="fas fa-calendar-alt fa-fw"></i> <span class="info-text"><strong>Admissão:</strong> ${dataAdmissao}</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-file-alt fa-fw"></i> <span class="info-text"><strong>Docs:</strong> <span class="employee-status-card ${employee.documentosPendentes ? 'status-pending' : 'status-ok'}">${employee.documentosPendentes ? 'Pendentes' : 'OK'}</span></span>
-            </div>
-            <div class="actions">
-                <a href="registro_funcionario.html?editId=${employee.id}" class="btn-outline-form edit-btn"><i class="fas fa-pencil-alt"></i> Editar</a>
-                <button class="btn-danger-form delete-btn" data-id="${employee.id}" data-cpf="${employee.cpf}"><i class="fas fa-trash-alt"></i> Excluir</button>
+            <img src="${employee.fotoFuncionarioUrl || 'https://via.placeholder.com/100'}" alt="Foto de ${employee.nomeCompleto}" class="foto">
+            <h3 class="nome">${employee.nomeCompleto}</h3>
+            <p class="cargo">${employee.cargo}</p>
+            <p class="info">Admissão: ${dataAdmissao}</p>
+            <p class="info">CPF: ${employee.cpf || 'Não informado'}</p>
+            <div class="action-buttons">
+                <a href="registro_funcionario.html?id=${employee.id}" class="btn-edit" title="Editar"><i class="fas fa-edit"></i></a>
+                <button class="btn-delete" data-id="${employee.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
             </div>
         `;
-        container.appendChild(card);
+        grid.appendChild(card);
     });
 
-    container.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const employeeId = e.currentTarget.dataset.id;
-            const employeeCpf = e.currentTarget.dataset.cpf;
+    // Adiciona o evento de clique para cada botão de deletar
+    grid.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', async (event) => {
+            const id = event.currentTarget.dataset.id;
             if (confirm('Tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.')) {
-                await deleteEmployee(employeeId, employeeCpf, db, storage);
+                await deleteEmployee(id);
             }
         });
     });
 }
 
+/**
+ * Deleta um funcionário do banco de dados.
+ * @param {string} id - O ID do funcionário a ser deletado.
+ */
+async function deleteEmployee(id) {
+    showLoading('Excluindo...');
+
+    // Futuramente, podemos adicionar a lógica para deletar os arquivos do Storage aqui.
+    // Por enquanto, vamos apenas deletar o registro do banco de dados.
+
+    const { error } = await supabase
+        .from('funcionario')
+        .delete()
+        .eq('id', id);
+
+    hideLoading();
+    if (error) {
+        console.error('Erro ao excluir funcionário:', error);
+        showToast('error', 'Erro', 'Não foi possível excluir o funcionário.');
+    } else {
+        showToast('success', 'Sucesso', 'Funcionário excluído.');
+        loadEmployees(); // Recarrega a lista para refletir a exclusão
+    }
+}
+
+
+/**
+ * Filtra a lista de funcionários exibida com base no texto digitado na busca.
+ */
 function filterEmployees() {
-    const searchInput = document.getElementById('searchQuadroInput');
-    if (!searchInput) return;
-    const searchTerm = searchInput.value.toLowerCase();
-    const filtered = allEmployeesData.filter(emp => {
-        return (emp.nomeCompleto?.toLowerCase() || '').includes(searchTerm) ||
-               (emp.cpf?.toLowerCase() || '').includes(searchTerm) ||
-               (emp.cargo?.toLowerCase() || '').includes(searchTerm);
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const filteredEmployees = allEmployees.filter(employee => {
+        const nome = employee.nomeCompleto?.toLowerCase() || '';
+        const cargo = employee.cargo?.toLowerCase() || '';
+        const cpf = employee.cpf?.toString() || '';
+        
+        return nome.includes(searchTerm) || cargo.includes(searchTerm) || cpf.includes(searchTerm);
     });
-    displayEmployees(filtered, dbInstance, storageInstance);
-}
-
-async function loadAndDisplayFuncionarios(db, storage) {
-    showLoading();
-    try {
-        const funcionariosCollectionRef = collection(db, `artifacts/${APP_COLLECTION_ID}/funcionario`);
-        const querySnapshot = await getDocs(funcionariosCollectionRef);
-        allEmployeesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        allEmployeesData.sort((a, b) => (a.nomeCompleto || '').localeCompare(b.nomeCompleto || ''));
-        displayEmployees(allEmployeesData, db, storage);
-    } catch (error) {
-        console.error("Erro ao carregar funcionários:", error);
-        showToast('error', 'Erro', 'Não foi possível carregar os dados dos funcionários.');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function deleteEmployee(employeeId, employeeCpf, db, storage) {
-    if (!employeeId || !employeeCpf) {
-        showToast('error', 'Erro', 'ID ou CPF do funcionário não fornecido para exclusão.');
-        return;
-    }
-    showLoading();
-    try {
-        const employeeDocRef = doc(db, `artifacts/${APP_COLLECTION_ID}/funcionario`, employeeId);
-        await deleteDoc(employeeDocRef);
-        showToast('success', 'Sucesso', 'Funcionário excluído com sucesso.');
-        await loadAndDisplayFuncionarios(db, storage);
-
-    } catch (error) {
-        console.error("Erro ao excluir funcionário:", error);
-        showToast('error', 'Erro', 'Falha ao excluir o funcionário. Tente novamente.');
-    } finally {
-        hideLoading();
-    }
-}
-
-export function initializeQuadroFuncionariosModule(db, storage) {
-    dbInstance = db;
-    storageInstance = storage;
-    const searchInput = document.getElementById('searchQuadroInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', filterEmployees);
-    }
-    loadAndDisplayFuncionarios(db, storage);
+    displayEmployees(filteredEmployees);
 }

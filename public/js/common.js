@@ -1,84 +1,84 @@
 // public/js/common.js
 
-// Importa o cliente supabase
 import { supabase } from './supabase-config.js';
 
 /**
- * Verifica o estado de autenticação do usuário e redireciona se não estiver logado.
- * Esta função é chamada em todas as páginas que precisam de login.
+ * Função dedicada a carregar o menu lateral.
+ */
+async function loadSidebar() {
+    try {
+        // Busca o arquivo sidebar.html a partir da raiz do site.
+        const response = await fetch('sidebar.html');
+        if (!response.ok) {
+            throw new Error(`Erro de rede ao buscar o menu: ${response.statusText}`);
+        }
+        const sidebarHTML = await response.text();
+        const placeholder = document.getElementById('sidebar-placeholder');
+
+        if (placeholder) {
+            placeholder.innerHTML = sidebarHTML;
+        } else {
+            console.error('Erro: O elemento #sidebar-placeholder não foi encontrado na página.');
+        }
+    } catch (error) {
+        console.error('Falha crítica ao carregar o menu lateral:', error);
+        const placeholder = document.getElementById('sidebar-placeholder');
+        if (placeholder) {
+            // Mostra um erro no lugar do menu se algo der errado.
+            placeholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar o menu. Verifique o console para mais detalhes.</p>';
+        }
+    }
+}
+
+
+/**
+ * Verifica o login, carrega o menu e inicializa a página.
  */
 export async function checkAuthAndRedirect() {
-    // Pega a sessão atual do usuário no Supabase
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
-        // Se não houver sessão (usuário não logado), redireciona para a página de login.
-        console.log("Usuário não logado, redirecionando...");
-        // Usamos 'index.html' como a página de login.
-        window.location.href = 'index.html'; 
+        window.location.href = 'index.html';
     } else {
-        // Se houver uma sessão, o usuário está logado.
-        // Inicializamos a interface comum (cabeçalho, menu lateral) com os dados do usuário.
+        // **LÓGICA CORRIGIDA:**
+        // 1. Primeiro, GARANTE que o menu foi carregado.
+        await loadSidebar();
+        // 2. SÓ DEPOIS, inicializa a interface (que depende do menu já existir).
         initializeCommonUI(session.user);
     }
 
-    // Fica "escutando" por mudanças no login (ex: usuário fez logout em outra aba)
+    // Listener para caso o usuário deslogue em outra aba.
     supabase.auth.onAuthStateChange((_event, session) => {
         if (!session) {
-            console.log("Sessão expirou ou usuário deslogou. Redirecionando...");
             window.location.href = 'index.html';
         }
     });
 }
 
-
 /**
- * Inicializa os elementos comuns da interface, como cabeçalho e menu.
+ * Adiciona as funcionalidades aos elementos da página (pressupõe que o menu já existe).
  */
 export function initializeCommonUI(user) {
-    // Carrega o menu lateral (sidebar)
-    loadHTMLComponent('sidebar-placeholder', 'sidebar.html').then(() => {
-        // Depois que o HTML do menu for carregado, podemos adicionar a lógica a ele.
-        
-        const userInfoSpan = document.getElementById('user-info')?.querySelector('span');
-        const logoutButtonSidebar = document.getElementById('logout-button-sidebar');
-
-        if (userInfoSpan && user && user.email) {
-            userInfoSpan.textContent = user.email.split('@')[0]; // Mostra apenas a parte antes do @
-        }
-
-        const performLogout = async (event) => {
-            event.preventDefault();
-            showLoading('Saindo...');
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                console.error("Erro ao fazer logout:", error);
-                hideLoading();
-                showToast('error', 'Erro', 'Não foi possível sair. Tente novamente.');
-            } else {
-                // O redirecionamento já é feito pelo 'onAuthStateChange'
-                console.log("Logout bem-sucedido.");
-            }
-        };
-
-        if (logoutButtonSidebar) {
-            logoutButtonSidebar.addEventListener('click', performLogout);
-        }
-
-        // Ativa o link do menu correspondente à página atual
-        const navLinks = document.querySelectorAll('.sidebar .nav-link');
-        const currentPath = window.location.pathname.split('/').pop();
-        navLinks.forEach(link => {
-            if (link.getAttribute('href') === currentPath) {
-                link.classList.add('active');
-            }
-        });
-    });
-
-    const currentDatetimeSpan = document.getElementById('current-datetime');
+    // Seleciona os elementos que já estão na tela
+    const userInfoSpan = document.getElementById('user-info')?.querySelector('span');
     const logoutButtonHeader = document.getElementById('logout-button-header');
+    const logoutButtonSidebar = document.getElementById('logout-button-sidebar'); // Agora este elemento existe
+    const currentDatetimeSpan = document.getElementById('current-datetime');
+    const navLinks = document.querySelectorAll('.sidebar .nav-link');
+
+    if (userInfoSpan && user && user.email) {
+        userInfoSpan.textContent = user.email.split('@')[0];
+    }
+
+    const performLogout = async (event) => {
+        event.preventDefault();
+        showLoading('Saindo...');
+        await supabase.auth.signOut();
+    };
+
+    logoutButtonHeader?.addEventListener('click', performLogout);
+    logoutButtonSidebar?.addEventListener('click', performLogout);
     
-    // Atualiza a data e a hora a cada segundo
     function updateDateTime() {
         if (!currentDatetimeSpan) return;
         const now = new Date();
@@ -88,30 +88,59 @@ export function initializeCommonUI(user) {
     }
     updateDateTime();
     setInterval(updateDateTime, 1000);
-
-    const performLogout = async (event) => {
-        event.preventDefault();
-        showLoading('Saindo...');
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error("Erro ao fazer logout:", error);
-            hideLoading();
+    
+    const currentPath = window.location.pathname.split('/').pop();
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
         }
-    };
-
-    if(logoutButtonHeader) {
-        logoutButtonHeader.addEventListener('click', performLogout);
-    }
+    });
 }
 
 
-/**
- * Exibe um spinner de carregamento em tela cheia.
- */
+// Funções de utilidade (Toast e Loading) - Sem alterações
 export function showLoading(message = 'Carregando...') {
-    let loadingSpinnerEl = document.getElementById('loadingSpinner');
-    if (!loadingSpinnerEl) {
-        loadingSpinnerEl = document.createElement('div');
-        loadingSpinnerEl.id = 'loadingSpinner';
-        document.body.appendChild(loadingSpinnerEl);
+    let el = document.getElementById('loadingSpinner');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'loadingSpinner';
+        document.body.appendChild(el);
     }
+    el.innerHTML = `<div class="spinner"></div><p>${message}</p>`;
+    el.style.display = 'flex';
+}
+
+export function hideLoading() {
+    const el = document.getElementById('loadingSpinner');
+    if (el) el.style.display = 'none';
+}
+
+export function showToast(type, title, message) {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    let icon = 'fas fa-info-circle';
+    if (type === 'success') icon = 'fas fa-check-circle';
+    if (type === 'error') icon = 'fas fa-exclamation-circle';
+    toast.innerHTML = `<div class="toast-icon"><i class="${icon}"></i></div><div class="toast-content"><div class="toast-title">${title}</div><div class="toast-message">${message}</div></div><button class="toast-close"><i class="fas fa-times"></i></button>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    const timeout = setTimeout(() => {
+        if (toast.parentElement) {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 5000);
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        clearTimeout(timeout);
+        if (toast.parentElement) {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }
+    });
+}
