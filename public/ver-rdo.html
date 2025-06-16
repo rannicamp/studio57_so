@@ -4,155 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualizar RDO - Studio 57</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div class="page-wrapper">
-        <div id="sidebar-placeholder"></div>
-        <div class="main-content-area-wrapper">
-            <header class="main-header">
-                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
-                <h1 id="page-title-header">Visualização de RDO</h1>
-                <div class="header-user-info">
-                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
-                    <div id="current-datetime">--/--/---- --:--:--</div>
-                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
-            </header>
+    <div id="sidebar-placeholder"></div>
+
+    <div class="main-content-area-wrapper">
+        <header class="main-header">
+             <div class="header-right">
+                <div id="user-info" class="user-info"></div>
+                <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <h1 class="page-title">Detalhes do Relatório Diário de Obra</h1>
             
-            <main class="content-scrollable">
-                <div class="toast-container" id="toastContainer"></div>
-                <div id="view-container-rdo" class="form-container" style="display: none;">
-                    <div class="form-body">
-                        <div class="form-section">
-                            <h3 class="form-section-title">Informações Gerais</h3>
-                            <div class="form-grid-2-col">
-                                <div class="form-group">
-                                    <label class="form-label">Empreendimento</label>
-                                    <p id="view-empreendimento-nome" class="form-static-text"></p>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Data do Relatório</label>
-                                    <p id="view-rdo-data" class="form-static-text"></p>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Responsável</label>
-                                <p id="view-rdo-responsavel" class="form-static-text"></p>
-                            </div>
-                        </div>
-
-                        <div class="form-section">
-                             <h3 class="form-section-title">Condições Gerais</h3>
-                             <p id="view-condicoes-gerais" class="form-static-text"></p>
-                        </div>
-                        
-                        <div class="form-section">
-                            <h3 class="form-section-title">Andamento das Atividades</h3>
-                            <ul id="view-atividades-lista" class="view-list"></ul>
-                        </div>
-
-                        <div class="form-section">
-                            <h3 class="form-section-title">Ocorrências e Observações</h3>
-                            <ul id="view-ocorrencias-lista" class="view-list"></ul>
-                        </div>
-                        
-                        <div class="form-section">
-                            <h3 class="form-section-title">Registro Fotográfico</h3>
-                            <div id="view-fotos-gallery" class="fotos-gallery view-only"></div>
-                        </div>
-                    </div>
+            <div id="rdo-details-container">
                 </div>
-
-                <div class="loading-overlay" id="loadingSpinner" style="display: flex;">
-                    <div class="spinner"></div>
-                </div>
-            </main>
-        </div>
+        </main>
     </div>
 
-    <script type="module">
-        import { supabaseClient as supabase } from './js/supabase-config.js';
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
-
-        // --- INICIALIZAÇÃO DA PÁGINA ---
-        async function initializePage() {
-            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            checkAuthAndRedirect((user) => {
-                initializeCommonUI(user);
-                initializeSidebarToggle();
-                const urlParams = new URLSearchParams(window.location.search);
-                const rdoId = urlParams.get('rdoId');
-                if (rdoId) {
-                    loadRdo(rdoId);
-                } else {
-                    showToast('error', 'Erro', 'ID do RDO não encontrado na URL.');
-                    hideLoading();
-                }
-            });
-        }
-        initializePage();
-        
-        async function loadRdo(id) {
-            const { data, error } = await supabase.from('rdo').select('*').eq('id', id).single();
-            if (error) {
-                showToast('error', 'Erro', 'Não foi possível carregar os dados do RDO.');
-                console.error(error);
-                hideLoading();
-                return;
-            }
-            populateView(data);
-        }
-
-        function populateView(data) {
-            document.getElementById('view-empreendimento-nome').textContent = data.empreendimentoNome;
-            document.getElementById('view-rdo-data').textContent = new Date(data.dataRelatorio + 'T03:00:00Z').toLocaleDateString('pt-BR');
-            document.getElementById('view-rdo-responsavel').textContent = data.responsavelRdo?.nome || 'Não informado';
-            
-            // Condições
-            const clima = Object.keys(data.condicoesClimaticas || {}).join(', ') || 'N/A';
-            const trabalho = Object.keys(data.condicoesTrabalho || {}).join(', ') || 'N/A';
-            document.getElementById('view-condicoes-gerais').innerHTML = `<strong>Clima:</strong> ${clima}<br><strong>Trabalho:</strong> ${trabalho}`;
-            
-            // Listas
-            const populateList = (containerId, items, key) => {
-                const container = document.getElementById(containerId);
-                container.innerHTML = '';
-                if (!items || items.length === 0) {
-                    container.innerHTML = '<li>Nenhum item registrado.</li>';
-                    return;
-                }
-                items.forEach(item => {
-                    const li = document.createElement('li');
-                    li.textContent = key === 'atividades' 
-                        ? `${item.descricao} - Status: ${item.status}` 
-                        : item.descricao;
-                    container.appendChild(li);
-                });
-            };
-            populateList('view-atividades-lista', data.statusAtividades, 'atividades');
-            populateList('view-ocorrencias-lista', data.ocorrencias, 'ocorrencias');
-            
-            // Galeria de Fotos
-            const gallery = document.getElementById('view-fotos-gallery');
-            gallery.innerHTML = '';
-            if (!data.fotos || data.fotos.length === 0) {
-                gallery.innerHTML = '<p>Nenhuma foto registrada.</p>';
-            } else {
-                data.fotos.forEach(foto => {
-                    const imgContainer = document.createElement('div');
-                    imgContainer.className = 'foto-item';
-                    imgContainer.innerHTML = `<a href="${foto.url}" target="_blank"><img src="${foto.url}" alt="Foto RDO"></a>`;
-                    gallery.appendChild(imgContainer);
-                });
-            }
-
-            document.getElementById('view-container-rdo').style.display = 'block';
-            hideLoading();
-        }
-
-    </script>
+    <div id="loadingSpinner" style="display: none;"></div>
+    <div id="toastContainer"></div>
+    <script type="module" src="/js/ver-rdo.js"></script>
 </body>
 </html>

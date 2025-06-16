@@ -3,333 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cronograma (Google Charts) - Studio 57</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <title>Cronograma (Gantt) - Studio 57</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.css">
 </head>
 <body>
-    <div class="page-wrapper">
-        <div id="sidebar-placeholder"></div>
-        <div class="main-content-area-wrapper">
-            <header class="main-header">
-                 <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
-                <h1 id="page-title-header">Cronograma (Gantt)</h1>
-                <div class="header-user-info">
-                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
-                    <div id="current-datetime">--/--/---- --:--:--</div>
-                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
-            </header>
-            <main class="content-scrollable">
-                <div class="toast-container" id="toastContainer"></div>
-                <div class="loading-overlay" id="loadingSpinner" style="display: none;"><div class="spinner"></div></div>
+    <div id="sidebar-placeholder"></div>
 
-                <div class="form-container">
-                     <div class="form-body" style="padding: 1.5rem;">
-                        <div class="actions-bar">
-                            <div class="filters-container">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label for="select-empreendimento" class="form-label">Selecione um Empreendimento</label>
-                                    <select id="select-empreendimento" class="form-control" style="min-width: 300px;"></select>
-                                </div>
-                            </div>
-                             <button id="add-activity-btn" class="btn btn-primary-form" style="display: none;"><i class="fas fa-plus"></i> Adicionar Atividade</button>
-                        </div>
-                        
-                        <div id="gantt_chart_div" style="width: 100%; height: auto; margin-top: 1.5rem;">
-                             <div id="gantt-placeholder" class="gantt-placeholder">Selecione um empreendimento para ver o cronograma.</div>
-                        </div>
-                    </div>
-                </div>
+    <div class="main-content-area-wrapper">
+        <header class="main-header">
+            <div class="header-right">
+                <div id="user-info" class="user-info"></div>
+                <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
 
-                <div id="activity-modal" class="gantt-modal">
-                    <div class="gantt-modal-content">
-                        <div class="gantt-modal-header">
-                            <h3 id="modal-title">Nova Atividade</h3>
-                            <button id="modal-close-btn" class="gantt-modal-close">&times;</button>
-                        </div>
-                        <div class="gantt-modal-body">
-                            <form id="gantt-modal-form" onsubmit="return false;">
-                                <input type="hidden" id="modal-activity-id">
-                                <div class="form-grid-2-col">
-                                    <div class="form-group">
-                                        <label for="modal-activity-stage" class="form-label">Etapa</label>
-                                        <select id="modal-activity-stage" class="form-control" required></select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="modal-activity-name" class="form-label">Nome da Atividade *</label>
-                                        <input type="text" id="modal-activity-name" class="form-control" required>
-                                    </div>
-                                </div>
-                                <div class="form-grid-2-col">
-                                    <div class="form-group">
-                                        <label for="modal-start-date" class="form-label">Data de Início *</label>
-                                        <input type="date" id="modal-start-date" class="form-control" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="modal-end-date" class="form-label">Data de Fim *</label>
-                                        <input type="date" id="modal-end-date" class="form-control" required>
-                                    </div>
-                                </div>
-                                <div class="form-grid-2-col">
-                                    <div class="form-group">
-                                        <label for="modal-dependencies" class="form-label">Depende da Tarefa (Pai)</label>
-                                        <select id="modal-dependencies" class="form-control"></select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="modal-progress" class="form-label">Progresso (%)</label>
-                                        <input type="number" id="modal-progress" class="form-control" min="0" max="100" value="0">
-                                    </div>
-                                </div>
-                                <div class="gantt-modal-footer">
-                                    <button type="button" id="modal-cancel-btn" class="btn btn-outline-form">Cancelar</button>
-                                    <button type="submit" id="modal-save-btn" class="btn btn-primary-form">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+        <main class="main-content">
+            <h1 class="page-title">Cronograma de Obra (Gantt)</h1>
+
+            <div class="card">
+                <div class="form-group">
+                    <label for="empreendimentoId">Selecione o Empreendimento</label>
+                    <select id="empreendimentoId" class="form-control">
+                        <option value="">Carregando empreendimentos...</option>
+                    </select>
                 </div>
-            </main>
-        </div>
+            </div>
+
+            <div class="card">
+                <div id="gantt-chart"></div>
+            </div>
+        </main>
     </div>
 
-    <script type="module">
-        import { supabaseClient as supabase } from './js/supabase-config.js';
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
-        
-        let ganttData = [];
-        let rawActivities = [];
-        let currentEmpreendimentoId = null;
-        let chart = null; 
-        let dataTable = null; 
-
-        const selectEmpreendimento = document.getElementById('select-empreendimento');
-        const addActivityBtn = document.getElementById('add-activity-btn');
-        const modal = document.getElementById('activity-modal');
-        const modalForm = document.getElementById('gantt-modal-form');
-        
-        const etapasPadrao = [
-            "01 - Serviços preliminares e gerais", "02 - Infra-estrutura", "03 - Supra-estrutura",
-            "04 - Paredes e painéis", "05 - Esquadrias", "06 - Vidros e plásticos",
-            "07 - Coberturas", "08 - Impermeabilizações", "09 - Revestimentos internos",
-            "10 - Forros", "11 - Pintura", "12 - Pisos", "13 - Acabamentos",
-            "14 - Instalações elétricas e telefônicas", "15 - Instalações hidráulicas",
-            "16 - Instalações de esgoto e águas pluviais", "17 - Louças e metais",
-            "18 - Complementos/Incêndio", "19 - Outros serviços"
-        ];
-
-        // --- INICIALIZAÇÃO DA PÁGINA ---
-        async function initializePage() {
-            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            checkAuthAndRedirect((user) => {
-                initializeCommonUI(user); 
-                initializeSidebarToggle();
-                setupEventListeners();
-                populateEtapaDropdown();
-                loadEmpreendimentos();
-                google.charts.load('current', {'packages':['gantt'], 'language': 'pt_BR'});
-                google.charts.setOnLoadCallback(() => {}); // Apenas carrega, não desenha nada ainda
-            });
-        }
-        initializePage();
-
-        // --- LÓGICA DO MODAL ---
-        function populateEtapaDropdown() {
-            const select = document.getElementById('modal-activity-stage');
-            select.innerHTML = '<option value="">Selecione a Etapa...</option>';
-            etapasPadrao.forEach(etapa => {
-                select.add(new Option(etapa, etapa));
-            });
-        }
-
-        function populateDependenciesDropdown(currentTaskId = null) {
-            const select = document.getElementById('modal-dependencies');
-            select.innerHTML = '<option value="">Nenhuma</option>';
-            rawActivities.forEach(activity => {
-                if (activity.id === currentTaskId) return; // Não pode depender de si mesma
-                select.add(new Option(activity.nome, activity.id));
-            });
-        }
-
-        function openModal(activity = null) {
-            modalForm.reset();
-            populateDependenciesDropdown(activity ? activity.id : null);
-            if (activity) {
-                document.getElementById('modal-title').textContent = 'Editar Atividade';
-                document.getElementById('modal-activity-id').value = activity.id;
-                document.getElementById('modal-activity-name').value = activity.nome;
-                document.getElementById('modal-activity-stage').value = activity.etapa;
-                document.getElementById('modal-start-date').value = activity.dataInicio.split('T')[0];
-                document.getElementById('modal-end-date').value = activity.dataFim.split('T')[0];
-                document.getElementById('modal-progress').value = activity.progresso || 0;
-                document.getElementById('modal-dependencies').value = activity.dependeDe || '';
-            } else {
-                document.getElementById('modal-title').textContent = 'Nova Atividade';
-            }
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
-        }
-
-        function closeModal() {
-            modal.classList.remove('show');
-            setTimeout(() => modal.style.display = 'none', 300);
-        }
-
-        async function saveModalData(event) {
-            event.preventDefault();
-            const id = document.getElementById('modal-activity-id').value;
-            const data = {
-                empreendimentoId: currentEmpreendimentoId,
-                nome: document.getElementById('modal-activity-name').value.trim(),
-                etapa: document.getElementById('modal-activity-stage').value,
-                dataInicio: document.getElementById('modal-start-date').value,
-                dataFim: document.getElementById('modal-end-date').value,
-                progresso: parseInt(document.getElementById('modal-progress').value, 10) || 0,
-                dependeDe: document.getElementById('modal-dependencies').value || null,
-            };
-
-            if (!data.nome || !data.dataInicio || !data.dataFim) {
-                showToast('error', 'Campos Obrigatórios', 'Nome, Início e Fim são obrigatórios.');
-                return;
-            }
-
-            showLoading();
-            let error;
-            if (id) {
-                ({ error } = await supabase.from('atividadesGantt').update(data).eq('id', id));
-            } else {
-                ({ error } = await supabase.from('atividadesGantt').insert(data));
-            }
-            hideLoading();
-
-            if (error) {
-                showToast('error', 'Erro ao Salvar', 'Não foi possível salvar a atividade.');
-                console.error("Erro no Supabase:", error);
-            } else {
-                showToast('success', 'Sucesso!', `Atividade ${id ? 'atualizada' : 'criada'} com sucesso.`);
-                closeModal();
-                loadGanttData(currentEmpreendimentoId);
-            }
-        }
-        
-        // --- LÓGICA DO GRÁFICO GANTT ---
-        function drawChart() {
-            if (ganttData.length === 0) {
-                 document.getElementById('gantt_chart_div').innerHTML = `<div class="gantt-placeholder">Nenhuma atividade cadastrada para este empreendimento.</div>`;
-                 return;
-            }
-
-            dataTable = new google.visualization.DataTable();
-            dataTable.addColumn('string', 'ID da Tarefa');
-            dataTable.addColumn('string', 'Nome da Tarefa');
-            dataTable.addColumn('string', 'Etapa');
-            dataTable.addColumn('date', 'Data de Início');
-            dataTable.addColumn('date', 'Data de Fim');
-            dataTable.addColumn('number', 'Duração (dias)');
-            dataTable.addColumn('number', 'Porcentagem Concluída');
-            dataTable.addColumn('string', 'Dependências');
-            dataTable.addRows(ganttData);
-
-            const options = {
-                height: ganttData.length * 42 + 50, // Altura dinâmica
-                gantt: {
-                    trackHeight: 40,
-                    percentEnabled: true,
-                    arrow: { color: '#5e6472', width: 2 },
-                    palette: [
-                        { "color": "#3b82f6", "dark": "#2563eb", "light": "#dbeafe" },
-                        { "color": "#10b981", "dark": "#059669", "light": "#d1fae5" }
-                    ]
-                }
-            };
-
-            const chartDiv = document.getElementById('gantt_chart_div');
-            chart = new google.visualization.Gantt(chartDiv);
-            
-            google.visualization.events.addListener(chart, 'select', () => {
-                const selection = chart.getSelection();
-                if (selection.length > 0) {
-                    const rowIndex = selection[0].row;
-                    const activityId = dataTable.getValue(rowIndex, 0);
-                    const selectedActivity = rawActivities.find(act => act.id == activityId);
-                    if(selectedActivity) openModal(selectedActivity);
-                }
-            });
-
-            chart.draw(dataTable, options);
-        }
-
-        async function loadGanttData(empreendimentoId) {
-            currentEmpreendimentoId = empreendimentoId;
-            addActivityBtn.style.display = 'inline-flex';
-            document.getElementById('gantt_chart_div').innerHTML = `<div class="gantt-placeholder">Carregando atividades...</div>`;
-            
-            showLoading();
-            const { data, error } = await supabase
-                .from('atividadesGantt')
-                .select('*')
-                .eq('empreendimentoId', empreendimentoId)
-                .order('dataInicio', { ascending: true });
-            hideLoading();
-
-            if (error) {
-                showToast('error', 'Erro', 'Falha ao carregar as atividades do cronograma.');
-                console.error(error);
-                return;
-            }
-            
-            rawActivities = data;
-            ganttData = rawActivities.map(d => [
-                String(d.id), d.nome, d.etapa || 'Geral',
-                new Date(d.dataInicio + 'T03:00:00'), // Adiciona fuso para evitar problemas de data
-                new Date(d.dataFim + 'T03:00:00'),
-                null, // Duração calculada pelo Google Charts
-                d.progresso || 0,
-                d.dependeDe ? String(d.dependeDe) : null
-            ]);
-            
-            drawChart();
-        }
-        
-        // --- FUNÇÕES DE APOIO E LISTENERS ---
-        async function loadEmpreendimentos() {
-            showLoading();
-            const { data, error } = await supabase.from('empreendimentos').select('id, nomeEmpreendimento').order('nomeEmpreendimento');
-            hideLoading();
-
-            if (error) {
-                showToast('error', 'Erro de Carga', 'Não foi possível carregar os empreendimentos.');
-                return;
-            }
-
-            selectEmpreendimento.innerHTML = '<option value="">Selecione...</option>';
-            data.forEach(emp => {
-                selectEmpreendimento.add(new Option(emp.nomeEmpreendimento, emp.id));
-            });
-        }
-        
-        function setupEventListeners() {
-            selectEmpreendimento.addEventListener('change', () => {
-                if (selectEmpreendimento.value) {
-                    loadGanttData(selectEmpreendimento.value);
-                } else {
-                    document.getElementById('gantt_chart_div').innerHTML = `<div class="gantt-placeholder">Selecione um empreendimento para ver o cronograma.</div>`;
-                    addActivityBtn.style.display = 'none';
-                }
-            });
-
-            addActivityBtn.addEventListener('click', () => openModal());
-            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
-            document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-            modalForm.addEventListener('submit', saveModalData);
-            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-
-            window.addEventListener('resize', () => {
-                 if (chart && ganttData.length > 0) drawChart();
-            });
-        }
-    </script>
+    <div id="loadingSpinner" style="display: none;"></div>
+    <div id="toastContainer"></div>
+    <script type="module" src="/js/gantt.js"></script>
 </body>
 </html>

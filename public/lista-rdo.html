@@ -4,168 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de RDOs - Studio 57</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div class="page-wrapper">
-        <div id="sidebar-placeholder"></div>
-        <div class="main-content-area-wrapper">
-            <header class="main-header">
-                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Recolher/Expandir Menu"><i class="fas fa-bars"></i></button>
-                <h1 id="page-title-header">Relatórios Diários de Obra (RDO)</h1>
-                <div class="header-user-info">
-                    <div id="user-info">Usuário: <span class="font-semibold">Carregando...</span></div>
-                    <div id="current-datetime">--/--/---- --:--:--</div>
-                    <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
-            </header>
-            
-            <main class="content-scrollable">
-                <div class="toast-container" id="toastContainer"></div>
-                
-                <div class="form-container">
-                     <div class="form-body" style="padding: 1.5rem;">
-                        <div class="actions-bar">
-                            <div class="filters-container">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label for="select-empreendimento" class="form-label">Selecione um Empreendimento</label>
-                                    <select id="select-empreendimento" class="form-control" style="min-width: 300px;"></select>
-                                </div>
-                                <div class="form-group" style="margin-bottom: 0; margin-left: 1rem;">
-                                    <label for="date-picker" class="form-label">Data do Novo RDO</label>
-                                    <input type="date" id="date-picker" class="form-control">
-                                </div>
-                            </div>
-                             <button id="create-rdo-btn" class="btn btn-primary-form" disabled><i class="fas fa-plus"></i> Criar Novo RDO</button>
-                        </div>
+    <div id="sidebar-placeholder"></div>
 
-                        <div id="rdo-list-container" class="table-container" style="margin-top: 2rem;">
-                            </div>
-                    </div>
-                </div>
+    <div class="main-content-area-wrapper">
+        <header class="main-header">
+            <div class="header-right">
+                <div id="user-info" class="user-info"></div>
+                <button id="logout-button-header" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
 
-                <div class="loading-overlay" id="loadingSpinner" style="display: none;">
-                    <div class="spinner"></div>
+        <main class="main-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h1 class="page-title" style="margin-bottom: 0;">Relatórios Diários de Obra</h1>
+                <a href="/rdo.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Novo RDO
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table" id="rdoTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Empreendimento</th>
+                                <th>Responsável</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
                 </div>
-            </main>
-        </div>
+            </div>
+        </main>
     </div>
-    
-    <script type="module">
-        import { supabaseClient as supabase } from './js/supabase-config.js';
-        import { checkAuthAndRedirect, initializeCommonUI, loadHTMLComponent, initializeSidebarToggle, showLoading, hideLoading, showToast } from './js/common.js';
 
-        // --- INICIALIZAÇÃO DA PÁGINA ---
-        async function initializePage() {
-            await loadHTMLComponent('sidebar-placeholder', 'sidebar.html');
-            checkAuthAndRedirect((user) => {
-                initializeCommonUI(user);
-                initializeSidebarToggle();
-                setupEventListeners();
-                loadEmpreendimentos();
-            });
-        }
-        initializePage();
-        
-        const selectEmpreendimento = document.getElementById('select-empreendimento');
-        const datePicker = document.getElementById('date-picker');
-        const createRdoBtn = document.getElementById('create-rdo-btn');
-        const rdoListContainer = document.getElementById('rdo-list-container');
-
-        function setupEventListeners() {
-            // Habilita/desabilita o botão de criar
-            const checkEnableButton = () => {
-                createRdoBtn.disabled = !(selectEmpreendimento.value && datePicker.value);
-            };
-            selectEmpreendimento.addEventListener('change', checkEnableButton);
-            datePicker.addEventListener('change', checkEnableButton);
-
-            // Ação de criar RDO
-            createRdoBtn.addEventListener('click', () => {
-                const empreendimentoId = selectEmpreendimento.value;
-                const data = datePicker.value;
-                // Redireciona para a página de edição com os parâmetros
-                window.location.href = `rdo.html?empreendimentoId=${empreendimentoId}&data=${data}`;
-            });
-
-            // Ação de carregar lista de RDOs ao mudar empreendimento
-            selectEmpreendimento.addEventListener('change', () => {
-                if (selectEmpreendimento.value) {
-                    loadRdos(selectEmpreendimento.value);
-                } else {
-                    rdoListContainer.innerHTML = '';
-                }
-            });
-        }
-        
-        async function loadEmpreendimentos() {
-            showLoading();
-            const { data, error } = await supabase.from('empreendimentos').select('id, nomeEmpreendimento').order('nomeEmpreendimento');
-            hideLoading();
-            if (error) {
-                showToast('error', 'Erro', 'Não foi possível carregar os empreendimentos.');
-                console.error(error);
-                return;
-            }
-            selectEmpreendimento.innerHTML = '<option value="">Selecione...</option>';
-            data.forEach(emp => {
-                const option = new Option(emp.nomeEmpreendimento, emp.id);
-                selectEmpreendimento.add(option);
-            });
-        }
-        
-        async function loadRdos(empreendimentoId) {
-            showLoading();
-            rdoListContainer.innerHTML = '<p>Carregando relatórios...</p>';
-            const { data, error } = await supabase
-                .from('rdo')
-                .select('id, dataRelatorio, responsavelRdo')
-                .eq('empreendimentoId', empreendimentoId)
-                .order('dataRelatorio', { ascending: false });
-            
-            hideLoading();
-            if (error) {
-                showToast('error', 'Erro', 'Não foi possível carregar os RDOs.');
-                rdoListContainer.innerHTML = '<p class="error">Falha ao carregar relatórios.</p>';
-                console.error(error);
-                return;
-            }
-            
-            if (data.length === 0) {
-                 rdoListContainer.innerHTML = '<p>Nenhum RDO encontrado para este empreendimento.</p>';
-                 return;
-            }
-
-            const table = document.createElement('table');
-            table.className = 'data-table';
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Responsável</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.map(rdo => `
-                        <tr>
-                            <td data-label="Data">${new Date(rdo.dataRelatorio + 'T03:00:00Z').toLocaleDateString('pt-BR')}</td>
-                            <td data-label="Responsável">${rdo.responsavelRdo?.nome || 'Não informado'}</td>
-                            <td data-label="Ações">
-                                <div class="table-action-buttons">
-                                    <a href="rdo.html?rdoId=${rdo.id}" class="btn-action btn-edit" title="Editar RDO"><i class="fas fa-pencil-alt"></i></a>
-                                    <a href="ver-rdo.html?rdoId=${rdo.id}" class="btn-action btn-view" title="Visualizar RDO"><i class="fas fa-eye"></i></a>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            `;
-            rdoListContainer.innerHTML = '';
-            rdoListContainer.appendChild(table);
-        }
-    </script>
+    <div id="loadingSpinner" style="display: none;"></div>
+    <div id="toastContainer"></div>
+    <script type="module" src="/js/lista-rdo.js"></script>
 </body>
 </html>
